@@ -137,10 +137,6 @@ class HVACDSOTEnvironmentModel{
     + hod: int
     + dow: int
     + surface_angles: dict
-    + UA: float
-    + CA: float
-    + HM: float
-    + CM: float
     + mass_internal_gain_fraction: float
     + mass_solar_gain_fraction: float
     + solar_heatgain_factor: float
@@ -148,10 +144,54 @@ class HVACDSOTEnvironmentModel{
 }
 class HVACDSOTAssetModel {
     + temperatures: HVACTemperatures
-    + A_ETP: list
-    + AEI: list
-    + B_ETP_ON: list
-    + B_ETP_OFF: list
+    + cooling_capacity_K0: float
+    + cooling_capacity_K1: float
+    + latent_load_fraction: float
+    + latent_factor: float
+    + cooling_design_temperature: float
+    + design_cooling_setpoint: float
+    + design_internal_gains: float
+    + design_peak_solar: float
+    + over_sizing_factor: float
+    + heating_system_type: HeatingSystemEnum
+    + cooling_system_type: CoolingSystemEnum
+    + hvac_system_model: HVACDSOTSystemModel
+    + hvac_structure_model: HVACDSOTStructureModel
+    + design_heating_setpoint: float
+    + heating_design_temperature: float
+    + eps: float
+}
+class HVACDSOTSystemModel {
+    + design_heating_capacity: float
+    + heating_capacity_K0: float
+    + heating_capacity_K1: float
+    + heating_capacity_K2: float
+    + design_cooling_capacity: float
+    + cooling_capacity_K0: float
+    + cooling_capacity_K1: float
+    + heating_cop_adj: float
+    + heating_COP: float
+    + heating_COP_limit: float
+    + heating_COP_K0: float
+    + heating_COP_K1: float
+    + heating_COP_K2: float
+    + heating_COP_K3: float
+    + cooling_cop_adj: float
+    + cooling_COP: float
+    + cooling_COP_limit: float
+    + cooling_COP_K0: float
+    + cooling_COP_K1: float
+    + calc_heating_capacity()
+    + calc_cooling_capacity()
+    + calc_heating_COP()
+    + calc_cooling_COP()
+}
+
+class HVACDSOTStructureModel{
+    + UA: float
+    + CA: float
+    + HM: float
+    + CM: float
     + sqft: float
     + doors: float
     + Rroof: float
@@ -170,41 +210,16 @@ class HVACDSOTAssetModel {
     + glass_type: int
     + window_frame: int
     + glazing_treatment: int
-    + cooling_COP: float
-    + heating_COP: float
-    + cooling_cop_adj_rt: float
-    + heating_cop_adj_rt: float
-    + cooling_cop_adj: float
-    + heating_cop_adj: float
-    + cooling_COP_K0: float
-    + cooling_COP_K1: float
-    + cooling_COP_limit: float
-    + heating_COP_K0: float
-    + heating_COP_K1: float
-    + heating_COP_K2: float
-    + heating_COP_K3: float
-    + heating_COP_limit: float
-    + cooling_capacity_K0: float
-    + cooling_capacity_K1: float
-    + latent_load_fraction: float
-    + latent_factor: float
-    + cooling_design_temperature: float
-    + design_cooling_setpoint: float
-    + design_internal_gains: float
-    + design_peak_solar: float
-    + over_sizing_factor: float
-    + heating_system_type: HeatingSystemEnum
-    + cooling_system_type: CoolingSystemEnum
-    + design_heating_setpoint: float
-    + heating_design_temperature: float
-    + heating_capacity_K0: float
-    + heating_capacity_K1: float
-    + heating_capacity_K2: float
-    + design_heating_capacity: float
-    + design_cooling_capacity: float
-    + eps: float
-
+    + A_ETP: list
+    + AEI: list
+    + B_ETP_ON: list
+    + B_ETP_OFF: list
+    + calc_UA()
+    + calc_CA()
+    + calc_HM()
+    + calc_CM()
 }
+
 class HVACDSOTRTBiddingStrategy {
     + hvac_schedule: HVACSchedule
     + price_cap: float 
@@ -227,7 +242,6 @@ class HVACDSOTRTBiddingStrategy {
     + ramp_high_cool: float
     + ramp_low_heat: float
     + ramp_high_heat: float
-    + bid_rt_price: float
     + interpolation: bool
     + RT_minute_count_interpolation: float
     + bid_quantity: float
@@ -263,7 +277,6 @@ class HVACDSOTDABiddingStrategy {
     + ramp_low_heat: float
     + ramp_high_heat: float
     + price_forecast: list
-    + price_forecast_0: float
     + price_forecast_0_new: float
     + price_delta: float
     + price_mean: float
@@ -275,7 +288,6 @@ class HVACDSOTDABiddingStrategy {
     + full_forecast_ziploads: list
     + Qopt_da_prev: float
     + temp_da_prev: float
-    + DA_once_flag: bool
     + air_temp_agent: float
     + previous_Q_DA: float
     + previous_T_DA: float
@@ -366,6 +378,9 @@ HVACDSOTAsset "1" *-- "1" HVACDSOTEnvironmentModel
 HVACDSOTAssetState "1" *-- "1" ThermostatModeEnum
 HVACDSOTAssetModel "1" *-- "1" HeatingSystemEnum
 HVACDSOTAssetModel "1" *-- "1" CoolingSystemEnum
+HVACDSOTAssetModel "1" *-- "1"  HVACDSOTSystemModel
+HVACDSOTAssetModel "1" *-- "1"  HVACDSOTStructureModel
+
 
 Agent  <|--  DoubleAuctionAgent
 Bid  <|--  AuctionBid 
