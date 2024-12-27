@@ -10,10 +10,10 @@ if [[ -z ${TESPDIR} ]]; then
 fi
 
 # build_<image_name>: 0 - skip; 1 - build image; <image_name> must be in sync with names array below
-build_ubuntu=1
+build_ubuntu=0
 build_library=1
 build_build=1
-build_cplex=0
+build_cplex=1
 build_user=0
 
 paths=(

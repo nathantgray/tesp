@@ -23,11 +23,9 @@ RUN echo "===== Building CoSim Library =====" && \
   libtool \
   libjsoncpp-dev \
   gfortran \
-  cmake \
-  subversion && \
+  cmake && \
   echo "root:${SIM_USER}" | chpasswd && \
   addgroup --gid ${SIM_GID} ${SIM_GRP} && \
   useradd -m -s /bin/bash -u ${SIM_UID} ${SIM_USER} && \
-  echo "<<<< Changing '${SIM_USER}' password >>>>" && \
   echo "${SIM_USER}:${SIM_USER}" | chpasswd && \
   usermod -aG sudo,${SIM_GRP} ${SIM_USER}
