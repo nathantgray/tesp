@@ -13,10 +13,11 @@ fi
 tesp_ver=$(cat "${TESPDIR}/scripts/tesp_version")
 grid_ver=$(cat "${TESPDIR}/scripts/grid_version")
 docker_tag=${tesp_ver}_ubuntu_${grid_ver}
-ver=$(cat "${TESPDIR}/scripts/grid_version")
 IMAGE=pnnl/tesp:${docker_tag}
 
 # for custom use
+#IMAGE=cosim-ubuntu:tesp_${grid_ver}
+#IMAGE=cosim-library:tesp_${grid_ver}
 #IMAGE=cosim-build:tesp_${grid_ver}
 #IMAGE=cosim-cplex:tesp_${grid_ver}
 #IMAGE=cosim-user:tesp_${grid_ver}
