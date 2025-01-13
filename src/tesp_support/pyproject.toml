@@ -54,9 +54,6 @@ Repository = "https://github.com/pnnl/tesp"
 [tool.setuptools.packages.find]
 where = [".","tesp_support"]
 
-[tool.setuptools.dynamic]
-version = {attr = "tesp_support.__version__"}
-
 [tool.setuptools.package-data]
 api = ["*"]
 "api.datafiles" = ["*.json", "*.db"]
