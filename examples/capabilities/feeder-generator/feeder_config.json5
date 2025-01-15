@@ -3,10 +3,10 @@
 
 {
     // Simulation
-    "starttime": "2023-01-01 07:00:00", // REQUIRED: format "YYYY-MM-DD HH:MM:SS"
-    "stoptime": "2023-12-31 07:00:00", // REQUIRED: format "YYYY-MM-DD HH:MM:SS"
+    "StartTime": "2023-01-01 07:00:00", // REQUIRED: format "YYYY-MM-DD HH:MM:SS"
+    "EndTime": "2023-12-31 07:00:00", // REQUIRED: format "YYYY-MM-DD HH:MM:SS"
     "timestep": 300, // REQUIRED: simulation timestep, in seconds
-    "timezone": "EST+5EDT", // REQUIRED: GridLAB-D supported time zone: Eastern. (CST+6CDT (Central), MST+7MDT (Mountain), PST+8PDT (Pacific))
+    "TimeZone": "EST+5EDT", // REQUIRED: GridLAB-D supported time zone: Eastern. (CST+6CDT (Central), MST+7MDT (Mountain), PST+8PDT (Pacific))
     "metrics_interval": 300, // DEFAULT: 300, update frequency of the metrics collector, in seconds
 
     // Input and Output Files
