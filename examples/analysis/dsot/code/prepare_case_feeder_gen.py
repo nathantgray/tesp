@@ -322,18 +322,19 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
         dst = os.path.join(os.path.abspath(caseName), weather_agent_name, 'weather.dat')
         shutil.copy(src, dst)
 
-        # We need to generate the total population of commercial buildings by type and size
-        # this is performed by gld_feeder_generator.py
+        #We need to generate the total population of commercial buildings by type and size
+        #this is performed by gld_feeder_generator.py
         # num_res_customers = dso_val['number_of_gld_homes']
         # num_comm_customers = round(num_res_customers * dso_val['RCI customer count mix']['commercial'] /
         #                            dso_val['RCI customer count mix']['residential'])
         # num_comm_bldgs = num_comm_customers / dso_val['comm_customers_per_bldg']
+        # gld_feeder.assign_defaults(comm_config, comm_config_file)
         # comm_bldgs_pop = gld_feeder.Commercial_Build.define_comm_bldg(comm_config, dso_val['utility_type'], num_comm_bldgs)
-        #bldPrep['CommBldgPopulation'] = comm_bldgs_pop
+        # bldPrep['CommBldgPopulation'] = comm_bldgs_pop
 
-        # print(json.dumps(comm_bldgs_pop, sort_keys = True, indent = 2))
-        #print("\n!!!!! Initially, there are {0:d} commercial buildings !!!!!".format(
-        #    len(bldPrep['CommBldgPopulation'].keys())))
+        # print(json.dumps(bldPrep['CommBldgPopulation'], sort_keys = True, indent = 2))
+        # print("\n!!!!! Initially, there are {0:d} commercial buildings !!!!!".format(
+        #   len(bldPrep['CommBldgPopulation'].keys())))
 
         # write out a configuration for each substation
         # WARNING!!!!! some fields in case_config are changed, yet not saved to the file,
@@ -401,12 +402,9 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             config.use_recs = recs_data
             config.ev_reserved_soc = case_config['AgentPrep']['EV']['EVReserveLo']
             config.climate = dso_val['ashrae_zone']
-            config.out_path = os.path.join(os.curdir, sim['OutputPath'])
-
-
+            config.out_path = f"{sim['OutputPath']}/{sim['CaseName']}.glm"
             gld_feeder.Feeder(config)
-            print('got to gld_feeder')
-
+            
             # Then we want to create a JSON dictionary with the Feeder information
             gd.glm_dict(caseName + '/' + feed_key + '/' + feed_key, config=case_config,
                         ercot=sim['simplifiedFeeders'])
@@ -421,12 +419,12 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
                                  config=case_config,
                                  hvacSetpt=hvac_setpt)
             feedercnt += 1
-            print("=== DONE WITH FEEDER {0:s} for {1:s}. ======\n".format(feed_key, dso_key))
-
+            print("====== DONE WITH FEEDER {0:s} for {1:s}. ======\n".format(feed_key, dso_key))
         # =================== Laurentiu Marinovici 12/13/2019 - Copperplate feeder piece =======
+        bldPrep['CommBldgPopulation'] = gld_feeder.comm_bldgs_pop
         if sim["CopperplateFeeder"]:
-            print("!!!!! There are {0:d} / {1:d} commercial buildings left !!!!!".format(
-                len(bldPrep['CommBldgPopulation'].keys()), len(gld_feeder.comm_bldgs_pop)))
+            print("!!!!! There are {0:d} commercial buildings left !!!!!".format(
+               len(bldPrep['CommBldgPopulation'])))
             if len(bldPrep['CommBldgPopulation'].keys()) > 0:
                 print("!!!!! We are going with the copperplate feeder now. !!!!!")
                 feed_key = "copperplate_feeder"
@@ -437,6 +435,7 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
                 sim['CaseName'] = feed_key
                 case_config['BackboneFiles']['TaxonomyChoice'] = sim['CopperplateFeederName']
                 case_config['BackboneFiles']['CopperplateFeederFile'] = sim['CopperplateFeederFile']
+                case_config['BuildingPrep']['EvModelMetaData'] = gld_feeder.ev_mdl_metadata
                 cp_FG.populate_feeder(config=case_config)
 
                 gd.glm_dict(caseName + '/' + feed_key + '/' + feed_key, config=case_config,

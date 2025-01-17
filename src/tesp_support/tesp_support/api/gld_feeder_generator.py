@@ -229,8 +229,8 @@ class Config:
                                 self.RCI_customer_count_mix["commercial"] /
                                 self.RCI_customer_count_mix["residential"])
         num_comm_bldgs = num_comm_customers / self.comm_customers_per_bldg
-        self.base.comm_bldgs_pop = self.com_bld.define_comm_bldg(self.utility_type, num_comm_bldgs)
-        print("\nInitially, there are {0:d} commercial buildings !!!!!".format(len(self.base.comm_bldgs_pop.keys())) )
+        global comm_bldgs_pop
+        comm_bldgs_pop = self.com_bld.define_comm_bldg(self.utility_type, num_comm_bldgs)
         
         assign_defaults(self.res_bld, os.path.join(self.data_path, self.out_file_residential_meta))
         self.res_bld.checkResidentialBuildingTable()
@@ -249,9 +249,11 @@ class Config:
 
         assign_defaults(self.batt, os.path.join(self.data_path, self.file_battery_meta))
         assign_defaults(self.ev, os.path.join(self.data_path, self.file_ev_meta))
+        global ev_mdl_metadata
+        ev_mdl_metadata = self.ev
         self.base.ev_driving_metadata = self.ev.process_nhts_data(os.path.join(self.data_path, self.file_ev_driving_meta))
-
-        return self.base.comm_bldgs_pop
+        global ev_dr_metadata
+        ev_dr_metadata = self.base.ev_driving_metadata
 
     def load_position(self) -> dict | None:
         """ Read in positional data from feeder, if specified in config, to
@@ -1807,9 +1809,11 @@ class Electric_Vehicle:
                         "charging_efficiency": ev_charge_eff}
             ev_name = ev_name.replace(" ","_")
             self.glm.add_object("evcharger_det", f'{ev_name}_{self.ev_count}', params)
-            self.glm.add_collector("class=evcharger_det", "sum(actual_charge_rate)", "EV_charging_total.csv")
-            self.glm.add_group_recorder("class=evcharger_det", "actual_charge_rate", "EV_charging_power.csv")
-            self.glm.add_group_recorder("class=evcharger_det", "battery_SOC", "EV_SOC.csv")
+            self.glm.add_metrics_collector(ev_name, "evcharger_det")
+            # Additional recorders
+            # self.glm.add_collector("class=evcharger_det", "sum(actual_charge_rate)", "EV_charging_total.csv")
+            # self.glm.add_group_recorder("class=evcharger_det", "actual_charge_rate", "EV_charging_power.csv")
+            # self.glm.add_group_recorder("class=evcharger_det", "battery_SOC", "EV_SOC.csv")
 
     @staticmethod
     def selectEVmodel(evTable: dict, prob: float) -> str:
@@ -2016,7 +2020,7 @@ class Feeder:
         if hasattr(config, 'out_file_glm'):
             self.glm.write_model(os.path.join(config.data_path, config.out_file_glm))
         else:
-            self.glm.write_model(os.path.join(config.out_path))
+            self.glm.write_model(config.out_path)
 
         # Plot the model using the networkx package:
         if self.config.make_plot == "True":
@@ -2281,16 +2285,16 @@ class Feeder:
                     # TODO: Need a way to place link for j-modelica buildings on fourth feeder of Urban DSOs
                     # TODO: Need to work out what to do if we run out of commercial buildings before we get to the fourth feeder.
                     remain_comm_kva = 0
-                    for bldg in self.config.base.comm_bldgs_pop:
-                        if 0 >= (self.config.base.comm_bldgs_pop[bldg][1] - target_sqft) > sqft_error:
+                    for bldg in comm_bldgs_pop:
+                        if 0 >= (comm_bldgs_pop[bldg][1] - target_sqft) > sqft_error:
                             select_bldg = bldg
-                            sqft_error = self.config.base.comm_bldgs_pop[bldg][1] - target_sqft
-                        remain_comm_kva += self.config.base.comm_bldgs_pop[bldg][1] * sqft_kva_ratio
+                            sqft_error = comm_bldgs_pop[bldg][1] - target_sqft
+                        remain_comm_kva += comm_bldgs_pop[bldg][1] * sqft_kva_ratio
            
                 if select_bldg is not None:
                     comm_name = select_bldg
-                    comm_type = self.config.base.comm_bldgs_pop[select_bldg][0]
-                    comm_size = self.config.base.comm_bldgs_pop[select_bldg][1]
+                    comm_type = comm_bldgs_pop[select_bldg][0]
+                    comm_size = comm_bldgs_pop[select_bldg][1]
                     if comm_type == 'office':
                         total_office += 1
                     elif comm_type == 'warehouse_storage':
@@ -2311,10 +2315,10 @@ class Feeder:
                         total_healthcare_inpatient += 1
                     elif comm_type == 'low_occupancy':
                         total_low_occupancy += 1
-                    del (self.config.base.comm_bldgs_pop[select_bldg])
+                    del (comm_bldgs_pop[select_bldg])
                 else:
                     if nzones > 0:
-                        log.warning('Commercial building could not be found for %.2f KVA load', kva)
+                        log.info('Commercial building could not be found for %.2f KVA load', kva)
                     comm_name = 'streetlights'
                     comm_type = 'ZIPload'
                     comm_size = 0
@@ -2332,7 +2336,7 @@ class Feeder:
         # Print commercial info
         print('Results in a populated feeder with:')
         print('    {} commercial loads identified, {} buildings added, approximately {} kVA still to be assigned.'.
-              format(len(self.config.base.comm_bldgs_pop), total_commercial, int(remain_comm_kva)))
+              format(len(comm_bldgs_pop), total_commercial, int(remain_comm_kva)))
         print('     ', total_office, 'med/small offices with 3 floors, 5 zones each:', total_office*5*3, 'total office zones' )
         print('     ', total_warehouse_storage, 'warehouses,')
         print('     ', total_big_box, 'big box retail with 6 zones each:', total_big_box*6, 'total big box zones')

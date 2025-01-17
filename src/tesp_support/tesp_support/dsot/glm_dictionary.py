@@ -343,13 +343,13 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
                 if lst[0] == 'Rdoors':
                     Rdoors = float(lst[1].strip(';'))
                 if lst[0] == 'glazing_layers':
-                    glazing_layers = int(lst[1].strip(';'))
+                    glazing_layers = lst[1].strip(';')
                 if lst[0] == 'glass_type':
-                    glass_type = int(lst[1].strip(';'))
+                    glass_type = lst[1].strip(';')
                 if lst[0] == 'glazing_treatment':
-                    glazing_treatment = int(lst[1].strip(';'))
+                    glazing_treatment = lst[1].strip(';')
                 if lst[0] == 'window_frame':
-                    window_frame = int(lst[1].strip(';'))
+                    window_frame = lst[1].strip(';')
                 if lst[0] == 'airchange_per_hour':
                     airchange_per_hour = float(lst[1].strip(';'))
                 if lst[0] == 'cooling_COP':
@@ -440,6 +440,13 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
                     if '*' in lst[1]:  # if base power of zip load is set via schedule
                         ziploads[lastHouse]['scalar'][lst[1].split('*')[0]] = float(
                             lst[1].split('*')[1].strip(' ').strip(';')) * 1.0
+                        ziploads[lastHouse]['heatgain_fraction'][lst[1].split('*')[0]] = hf
+                        ziploads[lastHouse]['power_pf'][lst[1].split('*')[0]] = pf
+                        ziploads[lastHouse]['power_fraction'][lst[1].split('*')[0]] = pfr
+                    elif len(lst) > 2:
+                        print('lst' + str(lst))
+                        ziploads[lastHouse]['scalar'][lst[1]] = float(
+                            lst[3].strip(' ').strip(';')) * 1.0
                         ziploads[lastHouse]['heatgain_fraction'][lst[1].split('*')[0]] = hf
                         ziploads[lastHouse]['power_pf'][lst[1].split('*')[0]] = pf
                         ziploads[lastHouse]['power_fraction'][lst[1].split('*')[0]] = pfr
