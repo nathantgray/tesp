@@ -1,0 +1,129 @@
+// This file is an example of the glm_config.json5 that is used to
+// configure the process of populating a feeder.
+
+{
+    // Simulation
+    "starttime": <string>, // DEFAULT: "2023-01-01 07:00:00", format "YYYY-MM-DD HH:MM:SS"
+    "stoptime": <string>, // DEFAULT: "2023-01-01 17:00:00", format "YYYY-MM-DD HH:MM:SS"
+    "timestep": <int>, // DEFAULT: 300, simulation timestep, in seconds
+    "timezone": <string>, // DEFAULT: "EST+5EDT", GridLAB-D supported time zone: Eastern. (CST+6CDT (Central), MST+7MDT (Mountain), PST+8PDT (Pacific))
+    "metrics_interval": <int>, // DEFAULT: 300, update frequency of the metrics collector, in seconds
+
+    // Input and Output Files
+    "in_file_glm": <string>,         // input feeder model ("myfeeder.glm"). If empty, taxonomy feeder used
+    "make_plot": <string>,           // DEFAULT: FALSE, specify whether to plot populated feeder
+    "gis_file": <string>,            // optional positional data for feeder (.json)
+    "taxonomy": <string>, // DEFAULT: "R1-12.47-2.glm", taxonomy feeder model
+    "out_file_glm": <string>, // DEFAULT: "test.glm", output populated feeder ("myfeeder_populated.glm").
+    "case_name": <string>, // DEFAULT: "MyCase", a name for your case
+    "substation_name": <string>, // DEFAULT: "MySub", REQUIRED: a name for the substation
+    // Metadata Files
+    "data_path": ".",
+    "file_residential_meta": <string>, // DEFAULT: "residential_metadata.json",
+    "file_commercial_meta": <string>, // DEFAULT: "commercial_metadata.json",
+    "file_battery_meta": <string>, // DEFAULT: "battery_metadata.json",
+    "file_ev_meta": <string>, // DEFAULT: "ev_model_metadata.json",
+    "file_ev_driving_meta": <string>, // DEFAULT: "ev_driving_metadata.csv",
+
+    // RECS (Residential Energy Consumption Survey) Data
+    "out_file_residential_meta": <string>, // DEFAULT: "RECS_residential_metadata.json", If empty, will be generated using inputs below:
+    "out_file_hvac_set_point": <string>, // DEFAULT: "hvac_setpt_RECS.json",
+    "sample": {
+        "state": [<string>], // DEFAULT:["VT"],
+        "housing_density": [<string>], // DEFAULT: ["No_DSO_Type"], "No_DSO_Type", U, R, C possibly = S
+        "income_level": [<string>], // DEFAULT: ["Low", "Middle", "Upper"]
+    },
+    "bin_size_threshold": <float>, // DEFAULT: 100,
+    "climate":  <string>, // DEFAULT: "2A", 
+    "wh_shift": <float>, // DEFAULT: 0,
+
+    // Climate/Location (Note: check that all location data is consistent!)
+    "state": <string>, // DEFAULT: "TX",
+    "county": <string>, // DEFAULT: "Austin",
+    "latitude": <float>, // DEFAULT: 30.0
+    "longitude": <float>, // DEFAULT: -110.0
+    "tmyfile": <string>, // REQUIRED TMY3 weather file 
+
+    // Residential & Commercial Population
+    "utility_type": <string>, // DEFAULT: "Urban",
+    "number_of_gld_homes": <float>, // DEFAULT: 1308,
+    "comm_customers_per_bldg": <float>, // DEFAULT: 2.09,
+    "avg_house": <float>, // DEFAULT: 4500.0, Average house size, in VA
+    "avg_commercial": <float>, // 30000.0, Average commercial bldg size, in VA
+    "RCI_customer_count_mix": {
+      "residential": <float>, // DEFAULT: 0.8357,
+      "commercial": <float>, // DEFAULT: 0.1265,
+      "industrial": <float>, // DEFAULT: 0.0379
+    },
+
+    // Distributed Energy Resources
+    "use_recs": <string>, // DEFAULT: "True", populates solar, battery, and ev based on RECS income distributions
+    // if "False", uses the rates analysis pre-defined population values by income and housing type, ignoring the below deployment level configs. 
+    
+    // DER deployment levels 
+    "solar_deployment": <float>, // DEFAULT: 0.20,
+    "battery_deployment": <float>, // DEFAULT: 0.10,
+    "ev_deployment": <float>, // DEFAULT: 0.15,
+
+    "ev_reserved_soc": <float>, // DEFAULT: 20, Reserve state of charge of EVs
+
+    // Solar Diction
+    "solar": {
+        "panel_type": <string>, // DEFAULT: "SINGLE_CRYSTAL_SILICON",
+        "rated_power": <float>, // DEFAULT: 7.5,
+        "tilt_angle": <float>, // DEFAULT: 45.5,
+        "efficiency": <float>, // DEFAULT: 0.2,
+        "shading_factor": <float>, // DEFAULT: 0.1,
+        "orientation_azimuth": <float>, // DEFAULT: 270.0,
+        "orientation": <string>, // DEFAULT: "FIXED_AXIS",
+        "SOLAR_TILT_MODEL": <string>, // DEFAULT: "SOLPOS",
+        "SOLAR_POWER_MODEL": <string>, // DEFAULT: "FLATPLATE"
+    },
+
+    // Simulation (continued)
+    "seed": <float>, // DEFAULT: 13, random seed
+    "message_broker": <string>, // DEFAULT: "helics_msg", HELICS ("helics_msg") or FNCS ("fncs_msg") for cosimulation
+
+    // add schedules
+    "includes": [
+        "${TESPDIR}/data/schedules/appliance_schedules.glm",
+        "${TESPDIR}/data/schedules/water_and_setpoint_schedule_v5.glm",
+        "${TESPDIR}/data/schedules/commercial_schedules.glm"
+        ],
+
+    // add sets
+    "sets": {
+        "minimum_timestep": <float>, // DEFAULT: 300,
+        "relax_naming_rules": <int>, // DEFAULT: 1,
+        "warn": <bool>, // DEFAULT: 0
+    },
+
+    // add defines
+    "defines": {
+    },
+
+    // Climate (continued)
+    "interpolate": <float>, // DEFAULT: "QUADRATIC",
+
+    // Residential & Commercial Population (continued)
+    "income_level": [<string>], // DEFAULT: ["Low", "Middle", "Upper"],
+    "res_dso_type": <string>, // DEFAULT: "No_DSO_Type",
+    "region": <int>, // DEFAULT: 2,
+    "vll": <float>, // DEFAULT: 12470.0,
+    "vln": <float>, // DEFAULT: 7200.0,
+    "water_heater_model": <string>, // DEFAULT: "TWONODE", MULTILAYER, TWONODE
+
+    // Solar player diction
+    "use_solar_player": <string>, // DEFAULT: "False", True if pre-defining solar generation
+    "rooftop_pv_rating_MW": <float>, // DEFAULT: 7481.90, Used to calculate scaling factor
+    "solar_P_player": {
+        "name": "player",      // class name
+        "attr": "P_out_inj",   // attribute being played
+        "datatype": "double",  // the data type of the attribute
+        "static": "False",     // static value if True, data = static value
+        "data": "power_5_minute.csv"  // if static value is false
+    },
+    "solar_Q_player": null,
+
+ 
+}

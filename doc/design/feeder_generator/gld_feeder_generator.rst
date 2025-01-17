@@ -1,15 +1,15 @@
-============================
-Residential Feeder Generator 
-============================
+================
+Feeder Generator 
+================
 
-This residential feeder generator module, ``gld_residential_feeder.py``, takes a model ``[feeder].glm`` (GridLAB-D readable format), identifies existing transformers on the feeder with downstream load, determines how many houses each transformer can support based on the average house load in kVA, and adds that many houses and small ZIPloads. This module also adds commercial buildings and ZIP loads based on identified commercial loads. The newly populated feeder is saved as a separate .glm, which can be used for subsequent analysis in GridLAB-D.
+This feeder generator module, ``gld_feeder_generator.py``, takes a model ``[feeder].glm`` (GridLAB-D readable format), identifies existing transformers on the feeder with downstream load, determines how many houses each transformer can support based on the average house load in kVA, and adds that many houses and small ZIPloads. This module also adds commercial buildings and ZIP loads based on identified commercial loads. The newly populated feeder is saved as a separate .glm, which can be used for subsequent analysis in GridLAB-D.
 
 Before proceeding, please be sure you have successfully installed TESP.
 
 Pre-req: Get Required Data Files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before using ``gld_residential_feeder.py``, we need the required metadata. Start by downloading the supporting data that is not stored in the repository due to its size and static nature. This will add a ``data`` folder alongside the existing ``code`` folder from the repository. From the terminal: ::
+Before using ``gld_feeder_generator.py``, we need the required metadata. Start by downloading the supporting data that is not stored in the repository due to its size and static nature. This will add a ``data`` folder alongside the existing ``code`` folder from the repository. From the terminal: ::
 
     cd tesp/repository/tesp/examples/analysis/dsot/code
 
@@ -26,7 +26,7 @@ The Config class reads in the required user-defined configuration and metadata a
 Feeder Configuration
 --------------------
 
-The ``feeder_config.json5`` file contains the required configurations read in by the ``Config`` class and used by the rest of ``gld_residential_feeder.py``. This config file is organized into the following sections for readability.
+The ``feeder_config.json5`` file contains the required configurations read in by the ``Config`` class and used by the rest of ``gld_feeder_generator.py``. This config file is organized into the following sections for readability.
 
 - *Simulation*: the basic information to run a simulation, including start and stop times, timesteps, time zone, and the interval for the metrics collector.
 - *Input and Outupt Files*: file names of the input ``[feeder].glm``, a name for the output ``[populated_feeder].glm``, case name, substation name, and the names of the required residential, commercial, battery, and electric vehicle metadata files obtained in the pre-req.
@@ -85,8 +85,8 @@ Feeder
 This class pulls everything together to read the input feeder (``readBackboneModel``) and populate it with the residential, commercial, battery, solar, and electric vehicle loads defined in the previous classes. This is primarily achieved via the ``GLMModifier()`` module, called with the shorthand ``self.glm`` throughout. Existing transformer configurations are modified to accomodate the new loads and then the feeder is populated. This is achieved via the functions ``identify_xfmr_houses`` and ``identify_commercial_loads`` which report the number of houses, small loads, and commercial feeders to be added by the rest of the module. 
 
 
-Running gld_residential_feeder.py
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Running gld_feeder_generator.py
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To run the feeder generator, the ``Config`` class must first be initialized with the user-defined config file, after which ``Feeder`` reads that config, as such.::
 
