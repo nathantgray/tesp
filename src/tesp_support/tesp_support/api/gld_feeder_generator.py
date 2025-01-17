@@ -1392,8 +1392,10 @@ class Commercial_Build:
                 bldg['exterior_floor_fraction'] = 1
                 bldg['exterior_ceiling_fraction'] = 1
                 bldg['exterior_wall_fraction'] = 1
-                bldg['roof_type'] = Commercial_Build.rand_bin_select(bld_specs['roof_construction_insulation'], rng.random())
-                bldg['wall_type'] = Commercial_Build.rand_bin_select(bld_specs['wall_construction'], rng.random())
+                roof_construction_insulation = Commercial_Build.normalize_dict_prob('roof_construction_insulation', bld_specs['roof_construction_insulation'])
+                bldg['roof_type'] = Commercial_Build.rand_bin_select(roof_construction_insulation, rng.random())
+                wall_construction = Commercial_Build.normalize_dict_prob('wall_construction', bld_specs['wall_construction'])
+                bldg['wall_type'] = Commercial_Build.rand_bin_select(wall_construction, rng.random())
                 bldg['Rroof'] = 1 / Commercial_Build.find_envelope_prop(bldg['roof_type'], bldg['age'],
                                                                         self.general['thermal_integrity'],
                                                                         self.config.climate) * 1.3 * rng.normal(1, 0.1)

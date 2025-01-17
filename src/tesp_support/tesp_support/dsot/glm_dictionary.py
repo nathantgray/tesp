@@ -444,7 +444,6 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
                         ziploads[lastHouse]['power_pf'][lst[1].split('*')[0]] = pf
                         ziploads[lastHouse]['power_fraction'][lst[1].split('*')[0]] = pfr
                     elif len(lst) > 2:
-                        print('lst' + str(lst))
                         ziploads[lastHouse]['scalar'][lst[1]] = float(
                             lst[3].strip(' ').strip(';')) * 1.0
                         ziploads[lastHouse]['heatgain_fraction'][lst[1].split('*')[0]] = hf
