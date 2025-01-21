@@ -361,7 +361,6 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             sim['OutputPath'] = caseName + '/' + feed_key
             sim['CaseName'] = feed_key
             config = gld_feeder.Config(case_config_file)
-            # config.in_file_glm = ""
             config.taxonomy = f"{feed_val['name']}.glm"
             config.data_path = sys_config['dataPath']
             config.file_commercial_meta = comm_config_file
@@ -369,6 +368,9 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             config.file_battery_meta = batt_config_file
             config.file_ev_meta = ev_model_config_file
             config.file_ev_driving_meta = ev_driving_config_file
+            config.solar_percentage = case_config['FeederGenerator']['SolarPercentage']
+            config.storage_percentage = case_config['FeederGenerator']['StoragePercentage']
+            config.ev_percentage = case_config['FeederGenerator']['EVPercentage']
             config.make_plot = False
             config.use_solar_player = True
             config.StartTime = sys_config['StartTime']
@@ -383,14 +385,6 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             config.state = dso_val['state']
             config.res_dso_type = 'No_DSO_Type'
             config.utility_type = dso_val['utility_type']
-            # if dso_val['utility_type'] == 'Suburban':
-            #     config.res_dso_type = 'C'
-            # elif dso_val['utility_type'] == 'Urban':
-            #     config.res_dso_type = 'U'
-            # elif dso_val['utility_type'] == 'Rural':
-            #     config.res_dso_type = 'R'
-            # elif dso_val['utility_type'] == 'No_DSO_Type':
-            #     config.res_dso_type = 'No_DSO_Type'
             # Check avg house and commercial bldg size, in VA (not found in config)
             config.avg_house = 4500.0
             config.avg_commercial = 3000.0 
@@ -525,14 +519,16 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
         low_hses = len(hse_df.loc[(hse_df['income_level']=='Low')])
         middle_hses = len(hse_df.loc[(hse_df['income_level']=='Middle')])
         upper_hses = len(hse_df.loc[(hse_df['income_level']=='Upper')])
-        sol_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['solar']=='Yes')])
-        ev_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['ev']=='Yes')])
-        bat_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['battery']=='Yes')])
+        tot_inc_hses = low_hses + middle_hses + upper_hses
+        #sol_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['solar']=='Yes')])
+        sol_hses = len(hse_df.loc[(hse_df['solar']=='Yes')])
+        ev_hses = len(hse_df.loc[(hse_df['ev']=='Yes')])
+        bat_hses = len(hse_df.loc[(hse_df['battery']=='Yes')])
         elec_wh_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['wh_gallons']!=0)])
         elec_sh_hses = len(hse_df.loc[(hse_df['house']=='Yes') & (hse_df['fuel_type']=='electric')])
         print(f"=== RESIDENTIAL POPULATION SUMMARY ===")
         print(f"=== Income (Percent of all homes) ===")
-        print(f"=== Low: {round(100*low_hses/tot_hses,2)}%, Middle: {round(100*middle_hses/tot_hses,2)}%, Upper: {round(100*upper_hses/tot_hses,2)}%. ===")
+        print(f"=== Low: {round(100*low_hses/tot_inc_hses,2)}%, Middle: {round(100*middle_hses/tot_inc_hses,2)}%, Upper: {round(100*upper_hses/tot_inc_hses,2)}%. ===")
         print(f"=== DERs (Percent of all homes) ===")
         print(f"=== Solar: {round(100*sol_hses/tot_hses,2)}%, EVs: {round(100*ev_hses/tot_hses,2)}%, Batteries: {round(100*bat_hses/tot_hses,2)}%. ===")
         print(f"=== Electric Water Heating/Space Heating (Percent of all homes) ===")

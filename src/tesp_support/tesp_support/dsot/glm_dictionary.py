@@ -314,8 +314,6 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
                         inc_level = 'Middle'
                     elif 'Upper' in name:
                         inc_level = 'Upper'
-                    # else:
-                    #     print('Income level not defined')
                 if lst[0] == 'parent':
                     parent = lst[1].strip(';')
                 if lst[0] == 'floor_area':
@@ -528,7 +526,7 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
             inMessage = False
 
     for key, val in houses.items():
-        if key in waterheaters:
+        for key in waterheaters:
             val['wh_name'] = waterheaters[key]['name']
             val['wh_skew'] = waterheaters[key]['skew']
             val['wh_scalar'] = waterheaters[key]['scalar']
@@ -536,7 +534,7 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
             val['wh_gallons'] = waterheaters[key]['gallons']
             val['wh_tmix'] = waterheaters[key]['tmix']
             val['wh_mlayer'] = waterheaters[key]['mlayer']
-        if key in ziploads:
+        for key in ziploads:
             val['zip_skew'] = ziploads[key]['skew']
             val['zip_heatgain_fraction'] = ziploads[key]['heatgain_fraction']
             val['zip_scalar'] = ziploads[key]['scalar']
@@ -546,6 +544,7 @@ def glm_dict(name_root, config=None, ercot=False):  # , te30=False):
         # Laurentiu Dan Marinovici 2019/10/22 -
         # turned out that the commercial buildings do not have a bill_mode field in their GLM objects,
         # which led to not have them added to the billing meters fields
+    for key, val in houses.items():    
         try:
             mtr = billingmeters[val['billingmeter_id']]
             mtr['children'].append(key)

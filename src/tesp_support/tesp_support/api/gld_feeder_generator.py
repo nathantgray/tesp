@@ -154,6 +154,10 @@ class Config:
         if hasattr(self, 'includes'):
             for item in self.includes:
                 self.glm.model.add_include(item)
+        else:
+            self.glm.model.add_include('${TESPDIR}/data/schedules/appliance_schedules.glm')
+            self.glm.model.add_include('${TESPDIR}/data/schedules/water_and_setpoint_schedule_v5.glm')
+            self.glm.model.add_include('${TESPDIR}/data/schedules/commercial_schedules.glm')
 
         # Add sets
         if hasattr(self, 'sets'):
@@ -606,7 +610,13 @@ class Residential_Build:
             idx = i + 1
             tpxname1 = f'{tpxname}_{idx}'
             mtrname1 = f'{mtrname}_{idx}'
-            hsename = f'{basenode}_hs_{idx}'
+            if inc_lev == 0:
+                inc = 'Low'
+            elif inc_lev == 1:
+                inc = 'Middle'
+            elif inc_lev == 2:
+                inc = 'Upper'
+            hsename = f'{basenode}_{inc}_hs_{idx}'
             hse_m_name = f'{basenode}_hsmtr_{idx}'
             whname = f'{basenode}_wh_{idx}'
             sol_i_name = f'{basenode}_solinv_{idx}'
@@ -895,6 +905,7 @@ class Residential_Build:
                 # percentage of homes with both electric space and water heating
                 if rng.random() <= properties['sh_electric']['electric']:
                     wh_fuel_type = 'electric'
+            
             if wh_fuel_type == 'electric':  # if the water heater fuel type is electric, install wh
                 heat_element = 3.0 + 0.5 * rng.integers(1, 6)  # numpy integers (lo, hi) returns lo..(hi-1)
                 tank_set = 110 + 16 * rng.random()
@@ -964,7 +975,7 @@ class Residential_Build:
             #   trends as solar, but allow the user to specify a different
             #   deployment level in the config.
             #-------------------------------------------------------------------
-            if self.config.use_recs == "True":
+            if hasattr(self.config, 'in_file_glm') and self.config.use_recs == "True":
                 if bldg == 0:
                     prob_solar = self.config.solar_deployment * (self.solar_pv[self.config.state][self.config.res_dso_type]
                                                                 [income]["single_family_detached"] +
@@ -1001,11 +1012,11 @@ class Residential_Build:
 
                 prob_inc = self.income_level[self.config.state][self.config.res_dso_type][income]
 
-                prob_solar = (self.config.base.solar_percentage * self.solar_percentage[income])/(prob_sf * prob_inc)
+                prob_solar = (self.config.solar_percentage * self.solar_percentage[income])/(prob_sf * prob_inc)
 
-                prob_batt = (self.config.base.storage_percentage * self.battery_percentage[income])/(self.config.base.solar_percentage * self.solar_percentage[income])
+                prob_batt = (self.config.storage_percentage * self.battery_percentage[income])/(self.config.solar_percentage * self.solar_percentage[income])
 
-                prob_ev = (self.config.base.ev_percentage * self.ev_percentage[income])/prob_inc
+                prob_ev = (self.config.ev_percentage * self.ev_percentage[income])/prob_inc
 
             # add solar, ev, and battery based on RECS data or user-input
             self.config.sol.add_solar(prob_solar, mtrname1, sol_m_name, sol_name, sol_i_name, phs, v_nom, floor_area)
@@ -2007,8 +2018,8 @@ class Feeder:
         self.identify_commercial_loads('load', 0.001 * self.config.avg_commercial)
         for key in self.config.base.comm_loads:
             self.config.com_bld.define_commercial_zones(config.region, key, self.config.com_bld.total_comm_kva)
-        #self.glm.add_voltage_class('node', self.config.vln, self.config.vll, self.secnode)
-        #self.glm.add_voltage_class('meter',config.vln, self.config.vll, self.secnode)
+        self.glm.add_voltage_class('node', self.config.vln, self.config.vll, self.secnode)
+        self.glm.add_voltage_class('meter', self.config.vln, self.config.vll, self.secnode)
         #self.glm.add_voltage_class('load', self.config.vln, self.config.vll, self.secnode)
 
         print('DER added:'
@@ -2079,6 +2090,10 @@ class Feeder:
             # accumulated with them, including parallel paths. Also skipping
             # population for transformers with secondary voltage more than 500 V.
             e_config = e_object['configuration']
+            if hasattr(self.config, 'in_file_glm'):
+                self.config.base.base_feeder_name = self.config.in_file_glm
+            else: 
+                self.config.base.base_feeder_name = self.config.taxonomy
             sec_v = float(i_glm.transformer_configuration[e_config]['secondary_voltage'])
 
             if e_name not in self.seg_loads or sec_v > 500:
