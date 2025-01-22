@@ -142,11 +142,13 @@ class Config:
         self.glm.add_module("generators", {})
         self.glm.add_module("connection", {})
         self.glm.add_module("residential", {"implicit_enduses": "NONE"})
+        self.glm.add_module("powerflow", {"lu_solver": "KLU", "solver_method": "NR", "default_maximum_voltage_error": 1e-6})
 
         # Add player files if pre-defining solar generation
         if self.use_solar_player == "True":
-            player = self.solar_P_player
-            self.glm.model.add_class(player["name"], player["datatype"], player["attr"], player["static"], os.path.join(self.data_path, player["data"]))
+            player_params = {"file": str(os.path.join(self.solar_data_path, self.solar_P_player))}
+            self.glm.model.add_object("player", "P_out_inj", player_params)
+            #self.glm.model.add_object(player["name"], player["datatype"], player["attr"], player["static"], os.path.join(self.data_path, player["data"]))
 
         self.glm.model.set_clock(self.StartTime, self.EndTime, self.TimeZone)
 
@@ -154,11 +156,7 @@ class Config:
         if hasattr(self, 'includes'):
             for item in self.includes:
                 self.glm.model.add_include(item)
-        else:
-            self.glm.model.add_include('${TESPDIR}/data/schedules/appliance_schedules.glm')
-            self.glm.model.add_include('${TESPDIR}/data/schedules/water_and_setpoint_schedule_v5.glm')
-            self.glm.model.add_include('${TESPDIR}/data/schedules/commercial_schedules.glm')
-
+        
         # Add sets
         if hasattr(self, 'sets'):
             for key in self.sets:
@@ -175,12 +173,12 @@ class Config:
 
         # Add metrics interval and interim interval
         if self.metrics_interval > 0:
-            self.mdl.metrics_collector_writer.add("mc", {
-                "interval": str(self.base.metrics_interval),
-                "interim": str(self.base.metrics_interim),
-                "filename": str(self.base.metrics_filename),
-                "alternate": str(self.base.metrics_alternate),
-                "extension": str(self.base.metrics_extension) })
+            self.mdl.metrics_collector_writer.add("mc",{
+                "interval": str(self.metrics_interval),
+                "interim": str(self.metrics_interim),
+                "filename": str(self.metrics_filename),
+                "alternate": str(self.metrics_alternate),
+                "extension": str(self.metrics_extension)})
 
         # Add climate object and weather params
         if hasattr(self, 'tmyfile'):
@@ -190,7 +188,7 @@ class Config:
                 "longitude": str(self.longitude),
                 "tmyfile": str(self.tmyfile) })
         else:
-            self.mdl.climate.add(self.base.weather_name, {
+            self.mdl.climate.add(self.weather_name, {
                 "interpolate": str(self.interpolate),
                 "latitude": str(self.latitude),
                 "longitude": str(self.longitude),
@@ -1723,8 +1721,8 @@ class Solar:
 
             if self.config.use_solar_player == "True": 
                 pv_scaling_factor = inv_power / self.config.rooftop_pv_rating_MW
-                params["P_Out"] = f"{self.config.solar_P_player['attr']}.value * {pv_scaling_factor}"
-                params["Q_Out"] = f"{self.config.solar_Q_player['attr']}.value * 0.0"
+                #params["P_Out"] = f"{self.config.solar_P_player['attr']}.value * #{pv_scaling_factor}"
+                #params["Q_Out"] = f"{self.config.solar_Q_player['attr']}.value * 0.0"
             else:
                 params["Q_Out"] = "0"
                 # Instead of solar object, write a fake V_in and I_in 

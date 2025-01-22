@@ -361,8 +361,41 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             sim['OutputPath'] = caseName + '/' + feed_key
             sim['CaseName'] = feed_key
             config = gld_feeder.Config(case_config_file)
+            config.seed = dso_val['random_seed']
+            config.rand_style = 'old'
             config.taxonomy = f"{feed_val['name']}.glm"
             config.data_path = sys_config['dataPath']
+            config.includes = [
+                "${TESPDIR}/data/schedules/appliance_schedules.glm",
+                "${TESPDIR}/data/schedules/water_and_setpoint_schedule_v5.glm",
+                "${TESPDIR}/data/schedules/commercial_schedules.glm"
+                ]
+            config.sets = {
+                "minimum_timestep": case_config['FeederGenerator']['MinimumStep'],
+                "relax_naming_rules": 1,
+                "warn": 0
+                }
+            config.defines = [{"INVERTER_MODE", "CONSTANT_PQ"},
+                {"INV_VBASE", 240.0},
+                {"INV_V1", 0.92},
+                {"INV_V2", 0.98},
+                {"INV_V3", 1.02},
+                {"INV_V4", 1.08},
+                {"INV_Q1", 0.44},
+                {"INV_Q2", 0.00},
+                {"INV_Q3", 0.00},
+                {"INV_Q4", 0.44},
+                {"INV_VIN", 200.0},
+                {"INV_IIN", 32.5},
+                {"INV_VVLOCKOUT", 300.0},
+                {"INV_VW_V1", 1.05},
+                {"INV_VW_V2", 1.10},
+                {"INV_VW_P1", 1.0},
+                {"INV_VW_P2", 0.0}]
+            config.use_solar_player = "True"
+            config.solar_P_player = bldPrep['SolarPPlayerFile']
+            config.solar_data_path = sys_config['solarDataPath']
+            config.rooftop_pv_rating_MW = dso_val['rooftop_pv_rating_MW']
             config.file_commercial_meta = comm_config_file
             config.out_file_residential_meta = res_config_file
             config.file_battery_meta = batt_config_file
@@ -372,12 +405,16 @@ def prepare_case(node, mastercase, pv=None, bt=None, fl=None, ev=None):
             config.storage_percentage = case_config['FeederGenerator']['StoragePercentage']
             config.ev_percentage = case_config['FeederGenerator']['EVPercentage']
             config.make_plot = False
-            config.use_solar_player = True
             config.StartTime = sys_config['StartTime']
             config.EndTime = sys_config['EndTime']
             config.TimeZone = sys_config['TimeZone']
             config.metrics_interval = case_config['FeederGenerator']['MetricsInterval']
+            config.metrics_interim = case_config['FeederGenerator']['MetricsInterim']
+            config.metrics_filename = "${METRICS_FILE}"
+            config.metrics_alternate = "yes"
+            config.metrics_extension = case_config['FeederGenerator']['MetricsType']
             config.interpolate = 'QUADRATIC'
+            config.weather_name = 'weather_' + sub_key
             config.latitude = weaPrep['Latitude']
             config.longitude = weaPrep['Longitude']
             config.weather = weaPrep['WeatherChoice']

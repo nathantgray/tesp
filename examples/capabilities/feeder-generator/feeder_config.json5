@@ -8,6 +8,10 @@
     "timestep": 300, // REQUIRED: simulation timestep, in seconds
     "TimeZone": "EST+5EDT", // REQUIRED: GridLAB-D supported time zone: Eastern. (CST+6CDT (Central), MST+7MDT (Mountain), PST+8PDT (Pacific))
     "metrics_interval": 300, // DEFAULT: 300, update frequency of the metrics collector, in seconds
+    "metrics_interim": 3600,
+    "metrics_filename": "out_",
+    "metrics_alternate": "yes",
+    "metrics_extension": "h5",
 
     // Input and Output Files
     "in_file_glm": "", // input feeder model ("myfeeder.glm"). If empty, taxonomy feeder used
@@ -103,6 +107,7 @@
     },
 
     // Climate (continuted)
+    "weather_name": "localWeather",
     "interpolate": "QUADRATIC",
 
     // Residential & Commercial Population (continued)
