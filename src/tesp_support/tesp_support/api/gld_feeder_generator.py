@@ -129,14 +129,6 @@ class Config:
         rng = np.random.default_rng(self.seed)
         np.random.seed(self.seed)
 
-        # Lookup vll and vln values based on taxonomy feeder
-        if self.in_file_glm:
-            log.warning("vll and vln not known for user-defined feeder. Using defaults.")
-        for key in self.base.taxchoice:
-            if key[0] == self.taxonomy[:-4]:
-                self.vll = key[1]
-                self.vln = key[2]
-
     def preamble(self) -> None:
         """ Add required modules, objects, includes, defines, and sets required
         to run a .glm model.
@@ -150,25 +142,30 @@ class Config:
         self.glm.add_module("generators", {})
         self.glm.add_module("connection", {})
         self.glm.add_module("residential", {"implicit_enduses": "NONE"})
+        self.glm.add_module("powerflow", {"lu_solver": "KLU", "solver_method": "NR", "default_maximum_voltage_error": 1e-6})
 
         # Add player files if pre-defining solar generation
         if self.use_solar_player == "True":
-            player = self.solar_P_player
-            self.glm.model.add_class(player["name"], player["datatype"], player["attr"], player["static"], os.path.join(self.data_path, player["data"]))
+            player_params = {"file": str(os.path.join(self.solar_data_path, self.solar_P_player))}
+            self.glm.model.add_object("player", "P_out_inj", player_params)
+            #self.glm.model.add_object(player["name"], player["datatype"], player["attr"], player["static"], os.path.join(self.data_path, player["data"]))
 
-        self.glm.model.set_clock(self.starttime, self.stoptime, self.timezone)
+        self.glm.model.set_clock(self.StartTime, self.EndTime, self.TimeZone)
 
         # Add includes
-        for item in self.includes:
-            self.glm.model.add_include(item)
-
+        if hasattr(self, 'includes'):
+            for item in self.includes:
+                self.glm.model.add_include(item)
+        
         # Add sets
-        for key in self.sets:
-            self.glm.model.add_set(key, self.sets[key])
+        if hasattr(self, 'sets'):
+            for key in self.sets:
+                self.glm.model.add_set(key, self.sets[key])
 
         # Add defines
-        for key, value in self.defines:
-            self.glm.model.add_define(key, value)
+        if hasattr(self, 'defines'):
+            for key, value in self.defines:
+                self.glm.model.add_define(key, value)
 
         # Add voltage dump file
         if self.base.WANT_VI_DUMP:
@@ -176,19 +173,26 @@ class Config:
 
         # Add metrics interval and interim interval
         if self.metrics_interval > 0:
-            self.mdl.metrics_collector_writer.add("mc", {
-                "interval": str(self.base.metrics_interval),
-                "interim": str(self.base.metrics_interim),
-                "filename": str(self.base.metrics_filename),
-                "alternate": str(self.base.metrics_alternate),
-                "extension": str(self.base.metrics_extension) })
+            self.mdl.metrics_collector_writer.add("mc",{
+                "interval": str(self.metrics_interval),
+                "interim": str(self.metrics_interim),
+                "filename": str(self.metrics_filename),
+                "alternate": str(self.metrics_alternate),
+                "extension": str(self.metrics_extension)})
 
         # Add climate object and weather params
-        self.mdl.climate.add(self.base.weather_name, {
-            "interpolate": str(self.interpolate),
-            "latitude": str(self.latitude),
-            "longitude": str(self.longitude),
-            "tmyfile": str(self.tmyfile) })
+        if hasattr(self, 'tmyfile'):
+            self.mdl.climate.add(self.base.weather_name, {
+                "interpolate": str(self.interpolate),
+                "latitude": str(self.latitude),
+                "longitude": str(self.longitude),
+                "tmyfile": str(self.tmyfile) })
+        else:
+            self.mdl.climate.add(self.weather_name, {
+                "interpolate": str(self.interpolate),
+                "latitude": str(self.latitude),
+                "longitude": str(self.longitude),
+                "WeatherChoice": str(self.weather) })
 
     def generate_recs(self) -> None:
         """Generate RECS metadata if it does not yet exist based on user config.
@@ -197,18 +201,18 @@ class Config:
         Returns:
             None
         """
-
-        if not self.out_file_residential_meta:
-            # self.out_file_residential_meta = "RECS_residential_metadata.json"
-            get_RECS_jsons(
-                os.path.join(self.data_path, self.file_residential_meta),
-                os.path.join(self.data_path, self.out_file_residential_meta),
-                os.path.join(self.data_path, self.out_file_hvac_set_point),
-                self.sample,
-                self.bin_size_threshold,
-                self.region,
-                self.wh_shift
-            )
+        if hasattr(self, 'out_file_residential_meta'):
+            if not self.out_file_residential_meta:
+                # self.out_file_residential_meta = "RECS_residential_metadata.json"
+                get_RECS_jsons(
+                    os.path.join(self.data_path, self.file_residential_meta),
+                    os.path.join(self.data_path, self.out_file_residential_meta),
+                    os.path.join(self.data_path, self.out_file_hvac_set_point),
+                    self.sample,
+                    self.bin_size_threshold,
+                    self.region,
+                    self.wh_shift
+                )
 
     def load_recs(self) -> None:
         """ Assign default values for residential and commercial buildings,
@@ -224,11 +228,12 @@ class Config:
         assign_defaults(self.com_bld, os.path.join(self.data_path, self.file_commercial_meta))
         # generate the total population of commercial buildings by type and size
         num_comm_customers = round(self.number_of_gld_homes *
-                                   self.RCI_customer_count_mix["commercial"] /
-                                   self.RCI_customer_count_mix["residential"])
+                                self.RCI_customer_count_mix["commercial"] /
+                                self.RCI_customer_count_mix["residential"])
         num_comm_bldgs = num_comm_customers / self.comm_customers_per_bldg
-        self.base.comm_bldgs_pop = self.com_bld.define_comm_bldg(self.utility_type, num_comm_bldgs)
-
+        global comm_bldgs_pop
+        comm_bldgs_pop = self.com_bld.define_comm_bldg(self.utility_type, num_comm_bldgs)
+        
         assign_defaults(self.res_bld, os.path.join(self.data_path, self.out_file_residential_meta))
         self.res_bld.checkResidentialBuildingTable()
         cop_mat = self.res_bld.COP_average
@@ -246,7 +251,11 @@ class Config:
 
         assign_defaults(self.batt, os.path.join(self.data_path, self.file_battery_meta))
         assign_defaults(self.ev, os.path.join(self.data_path, self.file_ev_meta))
+        global ev_mdl_metadata
+        ev_mdl_metadata = self.ev
         self.base.ev_driving_metadata = self.ev.process_nhts_data(os.path.join(self.data_path, self.file_ev_driving_meta))
+        global ev_dr_metadata
+        ev_dr_metadata = self.base.ev_driving_metadata
 
     def load_position(self) -> dict | None:
         """ Read in positional data from feeder, if specified in config, to
@@ -260,18 +269,19 @@ class Config:
                 added by feeder generator
         """
 
-        if not self.in_file_glm:
+        if hasattr(self, 'gis_file') and not self.in_file_glm:
             self.gis_file = self.taxonomy.replace('-', '_').replace('.', '_').replace('_glm', '_pos.json')
             gis_path = os.path.join(os.path.expandvars('$TESPDIR/data/feeders'), self.gis_file)
-        elif self.gis_file:
+        elif hasattr(self, 'gis_file') and self.gis_file:
             gis_path = os.path.join(self.data_path, self.gis_file)
+            
+            with open(gis_path) as gis:
+                self.pos_data = json.load(gis)
+                self.pos = {}
+            return self.pos_data, self.pos
+    
         else:
             pass
-        
-        with open(gis_path) as gis:
-            self.pos_data = json.load(gis)
-            self.pos = {}
-        return self.pos_data, self.pos
         
 
 class Residential_Build:
@@ -411,7 +421,7 @@ class Residential_Build:
             "voltage_2": vstart,
             "constant_power_12_real": "10.0",
             "constant_power_12_reac": "8.0" })
-        if self.config.gis_file:
+        if hasattr(self.config, 'gis_file') and self.config.gis_file:
             self.config.pos[mtrname] = self.config.pos_data[basenode]
 
     def getDsoIncomeLevelTable(self) -> list:
@@ -598,7 +608,13 @@ class Residential_Build:
             idx = i + 1
             tpxname1 = f'{tpxname}_{idx}'
             mtrname1 = f'{mtrname}_{idx}'
-            hsename = f'{basenode}_hs_{idx}'
+            if inc_lev == 0:
+                inc = 'Low'
+            elif inc_lev == 1:
+                inc = 'Middle'
+            elif inc_lev == 2:
+                inc = 'Upper'
+            hsename = f'{basenode}_{inc}_hs_{idx}'
             hse_m_name = f'{basenode}_hsmtr_{idx}'
             whname = f'{basenode}_wh_{idx}'
             sol_i_name = f'{basenode}_solinv_{idx}'
@@ -608,7 +624,7 @@ class Residential_Build:
             bat_m_name = f'{basenode}_batmtr_{idx}'
             bat_name = f'{basenode}_bat_{idx}'
             # Add position data to house and meter objects, if available
-            if self.config.gis_file:
+            if hasattr(self.config, 'gis_file') and self.config.gis_file:
                 self.config.pos[mtrname1] = self.config.pos_data[basenode]
                 self.config.pos[hsename] = self.config.pos_data[basenode]
                 self.config.pos[hse_m_name] = self.config.pos_data[basenode]
@@ -887,6 +903,7 @@ class Residential_Build:
                 # percentage of homes with both electric space and water heating
                 if rng.random() <= properties['sh_electric']['electric']:
                     wh_fuel_type = 'electric'
+            
             if wh_fuel_type == 'electric':  # if the water heater fuel type is electric, install wh
                 heat_element = 3.0 + 0.5 * rng.integers(1, 6)  # numpy integers (lo, hi) returns lo..(hi-1)
                 tank_set = 110 + 16 * rng.random()
@@ -956,7 +973,7 @@ class Residential_Build:
             #   trends as solar, but allow the user to specify a different
             #   deployment level in the config.
             #-------------------------------------------------------------------
-            if self.config.use_recs == "True":
+            if hasattr(self.config, 'in_file_glm') and self.config.use_recs == "True":
                 if bldg == 0:
                     prob_solar = self.config.solar_deployment * (self.solar_pv[self.config.state][self.config.res_dso_type]
                                                                 [income]["single_family_detached"] +
@@ -993,11 +1010,11 @@ class Residential_Build:
 
                 prob_inc = self.income_level[self.config.state][self.config.res_dso_type][income]
 
-                prob_solar = (self.config.base.solar_percentage * self.solar_percentage[income])/(prob_sf * prob_inc)
+                prob_solar = (self.config.solar_percentage * self.solar_percentage[income])/(prob_sf * prob_inc)
 
-                prob_batt = (self.config.base.storage_percentage * self.battery_percentage[income])/(self.config.base.solar_percentage * self.solar_percentage[income])
+                prob_batt = (self.config.storage_percentage * self.battery_percentage[income])/(self.config.solar_percentage * self.solar_percentage[income])
 
-                prob_ev = (self.config.base.ev_percentage * self.ev_percentage[income])/prob_inc
+                prob_ev = (self.config.ev_percentage * self.ev_percentage[income])/prob_inc
 
             # add solar, ev, and battery based on RECS data or user-input
             self.config.sol.add_solar(prob_solar, mtrname1, sol_m_name, sol_name, sol_i_name, phs, v_nom, floor_area)
@@ -1118,7 +1135,7 @@ class Commercial_Build:
 
         self.glm.add_metrics_collector(name, "house")
         # Add position data to commercial building, if available
-        if self.config.gis_file:
+        if hasattr(self.config, 'gis_file'):
             self.config.pos[name] = self.config.pos_data[key]
 
 
@@ -1182,7 +1199,7 @@ class Commercial_Build:
                     params["base_power_" + phs] = '{:.2f}'.format(self.config.base.light_scalar_comm * phsva)
             self.mdl.load.add(name, params)
             # Add position data to commercial ZIPload, if available
-            if self.config.gis_file:
+            if hasattr(self.config, 'gis_file'):
                 self.config.pos[name] = self.config.pos_data[key]
 
         else:
@@ -1384,8 +1401,10 @@ class Commercial_Build:
                 bldg['exterior_floor_fraction'] = 1
                 bldg['exterior_ceiling_fraction'] = 1
                 bldg['exterior_wall_fraction'] = 1
-                bldg['roof_type'] = Commercial_Build.rand_bin_select(bld_specs['roof_construction_insulation'], rng.random())
-                bldg['wall_type'] = Commercial_Build.rand_bin_select(bld_specs['wall_construction'], rng.random())
+                roof_construction_insulation = Commercial_Build.normalize_dict_prob('roof_construction_insulation', bld_specs['roof_construction_insulation'])
+                bldg['roof_type'] = Commercial_Build.rand_bin_select(roof_construction_insulation, rng.random())
+                wall_construction = Commercial_Build.normalize_dict_prob('wall_construction', bld_specs['wall_construction'])
+                bldg['wall_type'] = Commercial_Build.rand_bin_select(wall_construction, rng.random())
                 bldg['Rroof'] = 1 / Commercial_Build.find_envelope_prop(bldg['roof_type'], bldg['age'],
                                                                         self.general['thermal_integrity'],
                                                                         self.config.climate) * 1.3 * rng.normal(1, 0.1)
@@ -1702,8 +1721,8 @@ class Solar:
 
             if self.config.use_solar_player == "True": 
                 pv_scaling_factor = inv_power / self.config.rooftop_pv_rating_MW
-                params["P_Out"] = f"{self.config.solar_P_player['attr']}.value * {pv_scaling_factor}"
-                params["Q_Out"] = f"{self.config.solar_Q_player['attr']}.value * 0.0"
+                #params["P_Out"] = f"{self.config.solar_P_player['attr']}.value * #{pv_scaling_factor}"
+                #params["Q_Out"] = f"{self.config.solar_Q_player['attr']}.value * 0.0"
             else:
                 params["Q_Out"] = "0"
                 # Instead of solar object, write a fake V_in and I_in 
@@ -1801,9 +1820,11 @@ class Electric_Vehicle:
                         "charging_efficiency": ev_charge_eff}
             ev_name = ev_name.replace(" ","_")
             self.glm.add_object("evcharger_det", f'{ev_name}_{self.ev_count}', params)
-            self.glm.add_collector("class=evcharger_det", "sum(actual_charge_rate)", "EV_charging_total.csv")
-            self.glm.add_group_recorder("class=evcharger_det", "actual_charge_rate", "EV_charging_power.csv")
-            self.glm.add_group_recorder("class=evcharger_det", "battery_SOC", "EV_SOC.csv")
+            self.glm.add_metrics_collector(ev_name, "evcharger_det")
+            # Additional recorders
+            # self.glm.add_collector("class=evcharger_det", "sum(actual_charge_rate)", "EV_charging_total.csv")
+            # self.glm.add_group_recorder("class=evcharger_det", "actual_charge_rate", "EV_charging_power.csv")
+            # self.glm.add_group_recorder("class=evcharger_det", "battery_SOC", "EV_SOC.csv")
 
     @staticmethod
     def selectEVmodel(evTable: dict, prob: float) -> str:
@@ -1965,6 +1986,14 @@ class Feeder:
         self.glm = config.glm
         self.mdl = config.glm.glm
 
+        # Lookup vll and vln values based on taxonomy feeder
+        if hasattr(self.config, 'in_file_glm') and self.config.in_file_glm:
+            log.warning("vll and vln not known for user-defined feeder. Using defaults.")
+        for key in self.config.base.taxchoice:
+            if key[0] == self.config.taxonomy[:-4]:
+                self.config.vll = key[1]
+                self.config.vln = key[2]
+        
         # Generate RECS metadata, if it does not exist
         self.config.generate_recs()
         # Assign defaults based on RECS data
@@ -1987,8 +2016,8 @@ class Feeder:
         self.identify_commercial_loads('load', 0.001 * self.config.avg_commercial)
         for key in self.config.base.comm_loads:
             self.config.com_bld.define_commercial_zones(config.region, key, self.config.com_bld.total_comm_kva)
-        #self.glm.add_voltage_class('node', self.config.vln, self.config.vll, self.secnode)
-        #self.glm.add_voltage_class('meter',config.vln, self.config.vll, self.secnode)
+        self.glm.add_voltage_class('node', self.config.vln, self.config.vll, self.secnode)
+        self.glm.add_voltage_class('meter', self.config.vln, self.config.vll, self.secnode)
         #self.glm.add_voltage_class('load', self.config.vln, self.config.vll, self.secnode)
 
         print('DER added:'
@@ -1999,7 +2028,10 @@ class Feeder:
               f"{self.config.ev.ev_count} EV chargers")
 
         # Write the popoulated glm model to the output file
-        self.glm.write_model(os.path.join(config.data_path, config.out_file_glm))
+        if hasattr(config, 'out_file_glm'):
+            self.glm.write_model(os.path.join(config.data_path, config.out_file_glm))
+        else:
+            self.glm.write_model(config.out_path)
 
         # Plot the model using the networkx package:
         if self.config.make_plot == "True":
@@ -2032,7 +2064,7 @@ class Feeder:
         """
 
         # Read in backbone feeder to populate. User-defined or taxonomy feeder.
-        if not self.config.in_file_glm:
+        if not hasattr(self.config, 'in_file_glm') or not self.config.in_file_glm:
             i_glm, success = self.glm.model.readBackboneModel(self.config.taxonomy)
             print('User feeder not defined, using taxonomy feeder', self.config.taxonomy)
             if not success:
@@ -2056,6 +2088,10 @@ class Feeder:
             # accumulated with them, including parallel paths. Also skipping
             # population for transformers with secondary voltage more than 500 V.
             e_config = e_object['configuration']
+            if hasattr(self.config, 'in_file_glm'):
+                self.config.base.base_feeder_name = self.config.in_file_glm
+            else: 
+                self.config.base.base_feeder_name = self.config.taxonomy
             sec_v = float(i_glm.transformer_configuration[e_config]['secondary_voltage'])
 
             if e_name not in self.seg_loads or sec_v > 500:
@@ -2264,16 +2300,16 @@ class Feeder:
                     # TODO: Need a way to place link for j-modelica buildings on fourth feeder of Urban DSOs
                     # TODO: Need to work out what to do if we run out of commercial buildings before we get to the fourth feeder.
                     remain_comm_kva = 0
-                    for bldg in self.config.base.comm_bldgs_pop:
-                        if 0 >= (self.config.base.comm_bldgs_pop[bldg][1] - target_sqft) > sqft_error:
+                    for bldg in comm_bldgs_pop:
+                        if 0 >= (comm_bldgs_pop[bldg][1] - target_sqft) > sqft_error:
                             select_bldg = bldg
-                            sqft_error = self.config.base.comm_bldgs_pop[bldg][1] - target_sqft
-                        remain_comm_kva += self.config.base.comm_bldgs_pop[bldg][1] * sqft_kva_ratio
+                            sqft_error = comm_bldgs_pop[bldg][1] - target_sqft
+                        remain_comm_kva += comm_bldgs_pop[bldg][1] * sqft_kva_ratio
            
                 if select_bldg is not None:
                     comm_name = select_bldg
-                    comm_type = self.config.base.comm_bldgs_pop[select_bldg][0]
-                    comm_size = self.config.base.comm_bldgs_pop[select_bldg][1]
+                    comm_type = comm_bldgs_pop[select_bldg][0]
+                    comm_size = comm_bldgs_pop[select_bldg][1]
                     if comm_type == 'office':
                         total_office += 1
                     elif comm_type == 'warehouse_storage':
@@ -2294,10 +2330,10 @@ class Feeder:
                         total_healthcare_inpatient += 1
                     elif comm_type == 'low_occupancy':
                         total_low_occupancy += 1
-                    del (self.config.base.comm_bldgs_pop[select_bldg])
+                    del (comm_bldgs_pop[select_bldg])
                 else:
                     if nzones > 0:
-                        log.warning('Commercial building could not be found for %.2f KVA load', kva)
+                        log.info('Commercial building could not be found for %.2f KVA load', kva)
                     comm_name = 'streetlights'
                     comm_type = 'ZIPload'
                     comm_size = 0
@@ -2315,7 +2351,7 @@ class Feeder:
         # Print commercial info
         print('Results in a populated feeder with:')
         print('    {} commercial loads identified, {} buildings added, approximately {} kVA still to be assigned.'.
-              format(len(self.config.base.comm_bldgs_pop), total_commercial, int(remain_comm_kva)))
+              format(len(comm_bldgs_pop), total_commercial, int(remain_comm_kva)))
         print('     ', total_office, 'med/small offices with 3 floors, 5 zones each:', total_office*5*3, 'total office zones' )
         print('     ', total_warehouse_storage, 'warehouses,')
         print('     ', total_big_box, 'big box retail with 6 zones each:', total_big_box*6, 'total big box zones')

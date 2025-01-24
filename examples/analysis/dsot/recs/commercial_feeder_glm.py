@@ -6,6 +6,7 @@ import numpy as np
 
 from tesp_support.api.helpers import gld_strict_name, randomize_commercial_skew
 import recs.residential_feeder_glm as res_FG
+import tesp_support.api.gld_feeder_generator as gld_feeder
 
 
 def define_comm_bldg(bldg_metadata, dso_type, num_bldgs):
@@ -377,14 +378,14 @@ def create_comm_zones(bldg, comm_loads, key, op, batt_metadata, storage_percenta
         if np.random.uniform(0, 1) <= storage_percentage:
             # TODO: Review battery results to see if one battery per 10000 sq ft. is appropriate.
             num_batt = math.floor(bldg_size / 10000) + 1
-            battery_capacity = num_batt * res_FG.get_dist(batt_metadata['capacity(kWh)']['mean'],
-                                                          batt_metadata['capacity(kWh)']['deviation_range_per']) * 1000
-            max_charge_rate = res_FG.get_dist(batt_metadata['rated_charging_power(kW)']['mean'],
-                                              batt_metadata['rated_charging_power(kW)']['deviation_range_per']) * 1000
+            battery_capacity = num_batt * res_FG.get_dist(batt_metadata['capacity']['mean'],
+                                                          batt_metadata['capacity']['deviation_range_per']) * 1000
+            max_charge_rate = res_FG.get_dist(batt_metadata['rated_charging_power']['mean'],
+                                              batt_metadata['rated_charging_power']['deviation_range_per']) * 1000
             max_discharge_rate = max_charge_rate
-            inverter_efficiency = batt_metadata['inv_efficiency(per)'] / 100
-            charging_loss = res_FG.get_dist(batt_metadata['rated_charging_loss(per)']['mean'],
-                                            batt_metadata['rated_charging_loss(per)']['deviation_range_per']) / 100
+            inverter_efficiency = batt_metadata['inv_efficiency'] / 100
+            charging_loss = res_FG.get_dist(batt_metadata['rated_charging_loss']['mean'],
+                                            batt_metadata['rated_charging_loss']['deviation_range_per']) / 100
             discharging_loss = charging_loss
             round_trip_efficiency = charging_loss * discharging_loss
             rated_power = max(max_charge_rate, max_discharge_rate)
@@ -487,63 +488,66 @@ def create_comm_zones(bldg, comm_loads, key, op, batt_metadata, storage_percenta
                 print('  };', file=op)
                 print('}', file=op)
 
-        if np.random.uniform(0, 1) <= ev_percentage:
-            # first lets select an ev model:
-            ev_name = res_FG.selectEVmodel(ev_metadata['sale_probability'], np.random.uniform(0, 1))
-            ev_range = ev_metadata['Range (miles)'][ev_name]
-            ev_mileage = ev_metadata['Miles per kWh'][ev_name]
-            ev_charge_eff = ev_metadata['charging efficiency']
-            # check if level 1 charger is used or level 2
-            if np.random.uniform(0, 1) <= ev_metadata['Level_1_usage']:
-                ev_max_charge = ev_metadata['Level_1 max power (kW)']
-                volt_conf = 'IS110'  # for level 1 charger, 110 V is good
-            else:
-                ev_max_charge = ev_metadata['Level_2 max power (kW)'][ev_name]
-                volt_conf = 'IS220'  # for level 2 charger, 220 V is must
-            # now, let's map a random driving schedule with this vehicle ensuring daily miles
-            # doesn't exceed the vehicle range and home duration is enough to charge the vehicle
-            drive_sch = res_FG.match_driving_schedule(ev_range, ev_mileage, ev_max_charge)
-            # ['daily_miles','home_arr_time','home_duration','work_arr_time','work_duration']
+        gld_feeder.Electric_Vehicle.add_ev(ev_metadata, ev_percentage, bldg['zonename'])
+        # ------------ new feeder generator performs same function as below ----
+        # if np.random.uniform(0, 1) <= ev_percentage:
+        #     # first lets select an ev model:
+        #     print(ev_metadata['sale_probability'])
+        #     ev_name = res_FG.selectEVmodel(ev_metadata['sale_probability'], np.random.uniform(0, 1))
+        #     ev_range = ev_metadata['Range_miles'][ev_name]
+        #     ev_mileage = ev_metadata['Miles_per_kWh'][ev_name]
+        #     ev_charge_eff = ev_metadata['charging_efficiency']
+        #     # check if level 1 charger is used or level 2
+        #     if np.random.uniform(0, 1) <= ev_metadata['Level_1_usage']:
+        #         ev_max_charge = ev_metadata['Level_1_max_power_kW']
+        #         volt_conf = 'IS110'  # for level 1 charger, 110 V is good
+        #     else:
+        #         ev_max_charge = ev_metadata['Level_2_max_power_kW'][ev_name]
+        #         volt_conf = 'IS220'  # for level 2 charger, 220 V is must
+        #     # now, let's map a random driving schedule with this vehicle ensuring daily miles
+        #     # doesn't exceed the vehicle range and home duration is enough to charge the vehicle
+        #     drive_sch = res_FG.match_driving_schedule(ev_range, ev_mileage, ev_max_charge)
+        #     # ['daily_miles','home_arr_time','home_duration','work_arr_time','work_duration']
 
-            # few sanity checks
-            if drive_sch['daily_miles'] > ev_range:
-                raise UserWarning('daily travel miles for EV can not be more than range of the vehicle!')
-            if not res_FG.is_hhmm_valid(drive_sch['home_arr_time']) or \
-                    not res_FG.is_hhmm_valid(drive_sch['home_leave_time']) or \
-                    not res_FG.is_hhmm_valid(drive_sch['work_arr_time']):
-                raise UserWarning('invalid HHMM format of driving time!')
-            if (drive_sch['home_duration'] > 24 * 3600 or drive_sch['home_duration'] < 0 or
-                    drive_sch['work_duration'] > 24 * 3600 or drive_sch['work_duration'] < 0):
-                raise UserWarning('invalid home or work duration for ev!')
-            if not res_FG.is_drive_time_valid(drive_sch):
-                raise UserWarning('home and work arrival time are not consistent with durations!')
+        #     # few sanity checks
+        #     if drive_sch['daily_miles'] > ev_range:
+        #         raise UserWarning('daily travel miles for EV can not be more than range of the vehicle!')
+        #     if not res_FG.is_hhmm_valid(drive_sch['home_arr_time']) or \
+        #             not res_FG.is_hhmm_valid(drive_sch['home_leave_time']) or \
+        #             not res_FG.is_hhmm_valid(drive_sch['work_arr_time']):
+        #         raise UserWarning('invalid HHMM format of driving time!')
+        #     if (drive_sch['home_duration'] > 24 * 3600 or drive_sch['home_duration'] < 0 or
+        #             drive_sch['work_duration'] > 24 * 3600 or drive_sch['work_duration'] < 0):
+        #         raise UserWarning('invalid home or work duration for ev!')
+        #     if not res_FG.is_drive_time_valid(drive_sch):
+        #         raise UserWarning('home and work arrival time are not consistent with durations!')
 
-            basenode = mtr
-            evname = gld_strict_name(basenode + '_ev')
-            hsename = gld_strict_name(basenode + '_ev_hse')
-            parent_zone = bldg['zonename']
-            if case_type['pv']:  # all pvCases(HR) have ev populated
-                print('object evcharger_det {', file=op)
-                print('    name', evname + ';', file=op)
-                print('    parent', parent_zone + ';', file=op)
-                print('    configuration', volt_conf + ';', file=op)  #
-                print('    breaker_amps 1000;', file=op)
-                print('    battery_SOC 100.0; //initial soc', file=op)
-                print('    travel_distance', '{};'.format(drive_sch['daily_miles']), file=op)
-                print('    arrival_at_work', '{};'.format(drive_sch['work_arr_time']), file=op)
-                print('    duration_at_work', '{}; // (secs)'.format(drive_sch['work_duration']), file=op)
-                print('    arrival_at_home', '{};'.format(drive_sch['home_arr_time']), file=op)
-                print('    duration_at_home', '{}; // (secs)'.format(drive_sch['home_duration']), file=op)
-                print('    work_charging_available FALSE;', file=op)
-                print('    maximum_charge_rate', '{:.2f}; //(watts)'.format(ev_max_charge * 1000), file=op)
-                print('    mileage_efficiency', '{:.3f}; // miles per kWh'.format(ev_mileage), file=op)
-                print('    mileage_classification', '{:.3f}; // range in miles'.format(ev_range), file=op)
-                print('    charging_efficiency', '{:.3f};'.format(ev_charge_eff), file=op)
-                if metrics_interval > 0:
-                    print('    object metrics_collector {', file=op)
-                    print('      interval', str(metrics_interval) + ';', file=op)
-                    print('    };', file=op)
-                print('}', file=op)
+        #     basenode = mtr
+        #     evname = gld_strict_name(basenode + '_ev')
+        #     hsename = gld_strict_name(basenode + '_ev_hse')
+        #     parent_zone = bldg['zonename']
+        #     if case_type['pv']:  # all pvCases(HR) have ev populated
+        #         print('object evcharger_det {', file=op)
+        #         print('    name', evname + ';', file=op)
+        #         print('    parent', parent_zone + ';', file=op)
+        #         print('    configuration', volt_conf + ';', file=op)  #
+        #         print('    breaker_amps 1000;', file=op)
+        #         print('    battery_SOC 100.0; //initial soc', file=op)
+        #         print('    travel_distance', '{};'.format(drive_sch['daily_miles']), file=op)
+        #         print('    arrival_at_work', '{};'.format(drive_sch['work_arr_time']), file=op)
+        #         print('    duration_at_work', '{}; // (secs)'.format(drive_sch['work_duration']), file=op)
+        #         print('    arrival_at_home', '{};'.format(drive_sch['home_arr_time']), file=op)
+        #         print('    duration_at_home', '{}; // (secs)'.format(drive_sch['home_duration']), file=op)
+        #         print('    work_charging_available FALSE;', file=op)
+        #         print('    maximum_charge_rate', '{:.2f}; //(watts)'.format(ev_max_charge * 1000), file=op)
+        #         print('    mileage_efficiency', '{:.3f}; // miles per kWh'.format(ev_mileage), file=op)
+        #         print('    mileage_classification', '{:.3f}; // range in miles'.format(ev_range), file=op)
+        #         print('    charging_efficiency', '{:.3f};'.format(ev_charge_eff), file=op)
+        #         if metrics_interval > 0:
+        #             print('    object metrics_collector {', file=op)
+        #             print('      interval', str(metrics_interval) + ';', file=op)
+        #             print('    };', file=op)
+        #         print('}', file=op)
     elif comm_type == 'ZIPLOAD':
         phsva = 1000.0 * kva / nphs
         print('object load { // street lights', file=op)
