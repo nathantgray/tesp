@@ -1,5 +1,7 @@
 # Agent Design Guidance
 
+The agent redesign here is part of a larger effort to redesign/re-architect/refactor the DSO+T codebase. That codebase is currently our flagship implmentation of a transactive system and is likely to be the starting point for future analysis. Additionally, if the redesign is done well, the classes created will be able to serve as a starting point for other transactive systems and make the development of said systems easier, clearer and more understandable. This document focuses just on the agent redesign and others will look at the broader redesign as a whole.
+
 ## Motivation
 There are multiple purposes of this deep dive into the DSO+T agents we are undertaking:
 
@@ -31,6 +33,9 @@ To generally improve the code quality and ensure continuity of performance from 
 4. Ability to support use interchangeable bidding strategies.
 5. Documentation of the software architecture and refactored classes, both of the APIs and in prose.
 6. (Maybe?) Provide an interactive model of the device for use in understanding it's behavior and validating the design.
+7. Support multiple concurrency or parallel execution and communication strategies. Right now, for memory management purposes, the agents are all instantiated and managed as objects in "substation.py". This reduces the memory footprint to a reasonable value but limits the parallel execution to the processing power available on the given compute node. When the agents all run their day-ahead optimization, we max out the compute resources on any given node implying we might be able to increase preformance by splitting the agents up across compute nodes and using HELICS for communication between the agents and substation.py. It would be great if the software architecture we define would allow different instantiation and communication techniques out of the box. 
+
+See also "redesign_requirement.md" for an understanding of the broader redesign effort (bigger than just the agents).
 
 ## Requirements for Agent Testbed
 Agent developers (both those of us refactoring the existing agents as well as those developing new agents) need a computationally light way of evaluating the functionality and performance of their code. To that end, it will be important to provide one or more test harnesses where developers can insert their code and see how it performs. It is likely there will need to be at least two testbeds:
@@ -63,6 +68,8 @@ TBD but these are Trevor's suggestions
 * Draft RTD for all appropriate refactored code
 
 ### Work Assignments
+As of Jan 2025, the broader redesign effort is curtailed due to limited funding. Trevor has had the time and funding to get started on a prototype redesign of the HVAC agent that the team as a whole will review. Assuming the architecture seems sound, we will be able to apply it to the other agents once funding is in place.
+
 * Trevor: [HVAC](https://github.com/pnnl/tesp/blob/62779f0ccaa38a7ec205d2a1a2c8748c5996a7be/src/tesp_support/tesp_support/dsot/hvac_agent.py)
 * Mitch: [Water Heater](https://github.com/pnnl/tesp/blob/62779f0ccaa38a7ec205d2a1a2c8748c5996a7be/src/tesp_support/tesp_support/dsot/water_heater_agent.py)
 * Fred: [Battery](https://github.com/pnnl/tesp/blob/62779f0ccaa38a7ec205d2a1a2c8748c5996a7be/src/tesp_support/tesp_support/dsot/battery_agent.py)
@@ -96,24 +103,13 @@ The agents are necessarily interacting with devices and transactive mechanisms/m
 ### Refactor Guidelines
 Still have to figure out we need to do here. In addition to using the new software architecture, we'll need to implement the devops tasks.
 
-### Deliverables for Richland meeting
-* Class definition for your agent 
-  * Methods will be more important than attributes
-  * As necessary or helpful, a workflow or sequence diagram to show how the agent will use it's methods
-  * Any supporting classes that are particular to your agent. 
-* Comments on the prematurely-defined agent class diagram Trevor put together.
-* Thoughts on common classes that all the agents will need
-  * Bid class
-  * Device model class (provide the agent with some kind of model for the device it is controlling)
+Further guidance TBD.
 
 
 ### Schedule
-This work will be started in FY25 and will almost certainly not be completed that fiscal uyear. The following is a preliminary schedule of deliverables:
+This work will be started in FY25 and will almost certainly not be completed that fiscal year. The initial funding we received in FY25 is only sufficient to create a planing and minimal prototyping. The hope is additional funding will become available later in FY25 that will enable us to work more broadly across agents.
 
-* July 23, 2024 - Meeting in Richland. Completion of assessment of agents and beginning development of new software architecture.
-* Sept 27, 2024 - Completion of new software architecture design with sufficient documenation (class sequence diagrams).
-* Jan 2, 2025 - Completion of re-implementation of agents using new software architecture and beginning of validation testing, testing suite, and documentation.
-* Mar 7, 2025 - Completion of validation testing, testing suite and documentation.
+
 
 ## References
 
