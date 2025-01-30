@@ -135,7 +135,7 @@ The commandline that ran this autotest was executed in the background, so that c
 
 .. code-block:: text
 
-    Test Case(s)                       Time Taken
+    Test Case(s)                  Time(sec) Taken
     =============================================
     GridLAB-D Player/Recorder            0.891868
     Loadshed - HELICS ns-3               4.129848
@@ -175,7 +175,7 @@ The commandline that ran this autotest was executed in the background, so that c
 
 .. code-block:: text
 
-    Test Case(s)                     Time Taken
+    Test Case(s)                Time(sec) Taken
     ===========================================
     SGIP1a - HELICS                14132.360023
     SGIP1b - HELICS                14143.111387
@@ -201,7 +201,9 @@ Alternate Installation Methods
 Windows- or macOS-Based Installation with Docker
 ------------------------------------------------
 
-For those not running on a Linux-based system, TESP is also distributed via a Docker image that can be run on Windows, macOS, and Linux.
+For those not running on a Linux-based system, TESP is also distributed via a Docker image that can be run on Windows (with WSL 2), macOS, and Linux. The TESP Docker containers are created to mount the locally cloned TESP respository folder such that anything placed in this folder is visible inside the Docker containers. This allows users to place custom code, model, and datasets in this folder and use them with applications in the Docker containers.
+
+The biggest downside to using the Docker containers is that customization of any of the compiled tools (_e.g._ GridLAB-D) is not possible without rebuilding the appropriate Docker image. 
 
 Install Docker
 ..............
@@ -225,10 +227,10 @@ Though the goal of the Docker image is to provide a consistent execution environ
 Entering the Docker to Use TESP
 ...............................
 
-With the Docker image pulled and the repository cloned in, it is possible to start the Docker container interactively, effectively giving you a Linux command-line prompt with a working TESP installation. To launch the container like this, two launch scripts are provided in the TESP repository.
+With the Docker image pulled and the repository cloned in, it is possible to start the Docker container interactively, effectively giving you a Linux command-line prompt with a working TESP installation. Before you begin, make sure to login to the docker with `docker login`. To launch the container, two launch scripts are provided in the TESP repository depending on your OS.
 
-* Linux and macOS: :code:`$ tesp/helper/runtesp.sh` 
-* Windows: :code:`$ tesp/helper/runtesp.bat`
+* Linux and macOS: :code:`$ tesp/scripts/helpers/runtesp.sh`
+* Windows: :code:`$ tesp/scripts/helpers/runtesp.bat`
 
 Running these scripts from the command line will return a Linux prompt and any of the TESP examples and autotests described in :ref:`local_build_installation` will run successfully.
 
@@ -288,6 +290,7 @@ Once inside the virtual environment, installing the TESP API is a two-step proce
 
    $ git clone https://github.com/pnnl/tesp.git
    $ cd tesp/src/tesp_support
+   $ source /path/to/new/tesp_env/bin/activate
    $ pip install -e .
 
 .. code-block:: doscon
@@ -295,9 +298,72 @@ Once inside the virtual environment, installing the TESP API is a two-step proce
 
    C:\> git clone https://github.com/pnnl/tesp.git
    C:\> cd tesp/src/tesp_support
+   C:\> path/to/new/tesp_env/Scripts/activate.bat
    C:\> pip install -e .
 
 
-Trouble-shooting Installation (forthcoming)
--------------------------------------------
+Trouble-shooting Installation
+-----------------------------
+
+Docker Integration
+..................
+
+If executing the `runtesp.bat` results in the error `docker: Error response from daemon: pull access denied for runtesp, repository does not exist or may require 'docker login'.`
+
+First confirm that you are logged in to docker:
+
+`docker login`
+
+If that still fails, try renormalizing the tesp repository.
+
+.. code-block:: shell-session
+    :caption: Renormalize tesp repository
+
+    $ git config --global core.eol lf
+    $ git add --update --renormalize
+    $ git ls-files -z | xargs -0 rm
+    $ git checkout .
  
+Docker file access with Linux as the host
+.........................................
+
+TESP uses linux group permissions to share files between linux host and docker container.
+The 'runner:x:9002' group has been added to the docker image for this purpose.
+These instructions are to be run on your host machine.
+For the text below, substitute your login name for 'userName', share group name for 'groupName'.
+
+To find out what 'groupName' that might have been used for the id 9002, issue the following command:
+
+.. code-block:: shell-session
+    
+    $ cat /etc/group | grep 9002
+
+If the group 'groupName:x:9002:...' is found, we need find out what groups your login has, issue the follow command:
+
+.. code-block:: shell-session
+    
+    $ groups
+
+If the 'groupName' is not a member of the group list, add the 'groupName' to the group list from '$ groups' command above to the user by modifying the 'userName':
+
+.. code-block:: shell-session
+    
+    $ sudo usermod -aG userName,sudo,groupName userName
+
+If that succeeds, you are now a member of the group and can skip the next paragraph.
+
+If there are no groups with the id 9002, we must add a new group to the system.
+Then add the 'groupName' to the group list from '$ groups' command above to the user by modifying 'userName':
+
+.. code-block:: shell-session
+
+    $ sudo addgroup groupName --gid 9002
+    $ sudo usermod -aG userName,sudo,groupName userName
+
+Change the directory to your TESP clone directory and set the permissions to use the 'groupName' group for the files.
+
+.. code-block:: shell-session
+    
+    $ cd ~/grid/tesp
+    $ chgrp -R groupName .
+

@@ -20,7 +20,7 @@ keywords = ["power system", "transactive", "energy"]
 requires-python = ">=3.10"
 dependencies = [
     "importlib-resources~=6.4.5",
-    "h5py~=3.11.0",
+    "h5py~=3.12.1",
     "helics~=3.5.3",
     "pandas~=2.2.3",
     "numpy~=1.26.4",
@@ -52,13 +52,14 @@ Documentation = "https://tesp.readthedocs.io"
 Repository = "https://github.com/pnnl/tesp"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = [".","tesp_support"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tesp_support.__version__"}
 
 [tool.setuptools.package-data]
-api_datafiles = ["*.json", "*.db"]
+api = ["*"]
+"api.datafiles" = ["*.json", "*.db"]
 
 [project.scripts]
 tesp_components = "tesp_support.api.data:tesp_component"

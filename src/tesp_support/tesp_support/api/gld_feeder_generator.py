@@ -2034,7 +2034,7 @@ class Feeder:
             self.glm.write_model(config.out_path)
 
         # Plot the model using the networkx package:
-        if self.config.make_plot == "True":
+        if self.config.make_plot:
             if self.config.gis_file:
                 print("\nUsing location data to plot image of model; this should just take a sec.")
                 # Merge house and meter position assignments with rest of GIS data
@@ -2384,7 +2384,7 @@ def _test2():
     config.data_path = data_path
     feeder = Feeder(config)
 
-    compare = filecmp.cmp(out, os.path.join(data_path,config.out_file_glm))
+    compare = filecmp.cmp(out, os.path.join(data_path, config.out_file_glm))
     print("Does the populated test feeder match the original 'R1-12.47-2_populated.glm'?")
     print(compare)
 
