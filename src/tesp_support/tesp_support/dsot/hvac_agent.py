@@ -1,10 +1,9 @@
 # Copyright (C) 2021-2024 Battelle Memorial Institute
 # See LICENSE file at https://github.com/pnnl/tesp
 # file: hvac_dsot.py
-"""Class that ...
-
-TODO: update the purpose of this Agent
-
+"""HVAC agent is responsible for coordinating the activity of a single-zone
+HVAC system in a transactive system. See the class docstring for further
+details.
 """
 import logging as log
 import math
@@ -106,10 +105,12 @@ class HVACDSOT:  # TODO: update class name
         in heating mode.
         heating_setpoint_upper (float) - Upper thermostat limit when HVAC is
         in heating mode.
-        basepoint_cooling (float) - Thermostat cooling setpoint as determined
-        by the non-price-responsive thermostat schedule.
-        basepoint_heating (float) - Thermostat heating setpoint as determined
-        by the non-price-responsive thermostat schedule.
+        basepoint_cooling (float) - Temperature slightly lower than the
+        deadband used to determine the range of price-responssive cooling
+        temperatures
+        basepoint_heating (float) - Temperature slightly higer than the
+        deadband used to determine the range of price-responssive heating
+        temperatures
         cooling_setpoint (float) - Current cooling setpoint for thermostat
         heating_setpoint (float) - Current heating setpoint for thermostat
         wakeup_set_cool (float) - Cooling setpoint for "wake-up" period for 
@@ -348,9 +349,9 @@ class HVACDSOT:  # TODO: update class name
         exterior_wall_fraction (float) - Fraction of wall area as a portion
         of the external thermal envelope of the structure modeled by agent for
         use in asset model (ETP model parameter).
-        WETC (float) - Window exterior tranmissions coefficient of the 
+        WETC (float) - Window exterior transmission coefficient of the 
         structure modeled by agent for use in asset model (ETP model 
-        parameter).
+        parameter). Has to do with shading on windows.
         glazing_layers (int) - Number of panes in windows of the 
         structure modeled by agent for use in asset model (ETP model 
         parameter). All windows are assumed to have the same number of panes
@@ -378,10 +379,10 @@ class HVACDSOT:  # TODO: update class name
         operating in cooling mode (ETP model parameter).
         heating_COP (float) - Coefficient of performance for HVAC unit when
         operating in heating mode (ETP model parameter).
-        cooling_cop_adj_rt (float) - Adjustment to the cooling COP based on  
-        unknown factors. 
-        heating_cop_adj_rt (float) - Adjustment to the heating COP based on  
-        unknown factors
+        cooling_cop_adj_rt (float) - Unused. adjustment to the cooling COP 
+        based on unknown factors. 
+        heating_cop_adj_rt (float) - Unused. a Adjustment to the heating COP 
+        based on unknown factors
         cooling_cop_adj (list) - List with "windowLength" number of elements
         all of value "cooling_COP"
         heating_cop_adj (list) - List with "windowLength" number of elements
@@ -419,7 +420,8 @@ class HVACDSOT:  # TODO: update class name
         in the agent ETP model
         heating_system_type (str) - Indicates type of heating system; valid values
         are "HEAT_PUMP" and "ELECTRIC".
-        cooling_system_type (str) = Unused
+        cooling_system_type (str) = Flag used to indicate whether this house has
+        cooling or not.
         design_heating_setpoint (float) - Hard-coded value; nominal thermostat 
         setpoint used in specifying the thermal design of the structure
         heating_design_temperature (float) - Hard-coded value; deviation from 
@@ -1832,7 +1834,7 @@ class HVACDSOT:  # TODO: update class name
             self.hvac_kw = val
 
     def set_wh_load(self, data_str: str) -> None:
-        """ NOT CALLED - Sets the wh_load attribute, if greater than zero
+        """Sets the wh_load attribute, if greater than zero
 
         Args:
             data_str (str): Waster heater load in kW
@@ -2314,7 +2316,7 @@ class HVACDSOT:  # TODO: update class name
         """Gets cooling and heating setpoint based on passed-in time
 
         Args:
-            moh3: (int): the minute of the hour from 0 to 59
+            moh3: (int): UNUSED; the minute of the hour from 0 to 59
             hod4: (int): the hour of the day, from 0 to 23
             dow3: (int): the day of the week, zero being Monday
 
@@ -2505,7 +2507,7 @@ class HVACDSOT:  # TODO: update class name
                                              3412.1416331279 / self.latent_factor[t] + self.internalgain_forecast[t] +
                                              self.solargain_forecast[t] * self.solar_heatgain_factor) / self.UA)))
 
-    def temp_bound_rule(self, m: ConcreteModel, t: int) -> tuple:
+    def temp_bound_rule(self, m: pyo.ConcreteModel, t: int) -> tuple:
         """Defines the temperature limits for the Pyomo optimization
 
         Args:
@@ -2523,7 +2525,7 @@ class HVACDSOT:  # TODO: update class name
                     self.temp_desired_48hour_heat[t] + self.range_high_heat)
 
     def DA_optimal_quantities(self) -> list:
-        """ Generates Day Ahead optimized quantities for Water Heater according
+        """ Generates day-ahead optimized quantities for HVAC according
         to the forecasted prices and water draw schedule, called by 
         DA_formulate_bid function
 
