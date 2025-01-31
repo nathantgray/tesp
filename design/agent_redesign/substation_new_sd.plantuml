@@ -1,6 +1,8 @@
 @startuml
 participant User
 
+' 2025-01-31: TDH: This is an incomplete draft of how substation should use the agents
+
 User -> substation: <<create>>
 activate substation #LightGrey
 
