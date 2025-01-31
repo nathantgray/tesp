@@ -1,4 +1,4 @@
-# Agent Perfomrance Goals
+# Agent Performance Goals
 
 Based on a conversation with Rob Pratt about his experience helping with the agent design in DSO+T, he recommended the following as good general practices when developing a new agent and/or a new trasnactive system in which the agent can operate.
 
