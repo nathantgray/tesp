@@ -66,16 +66,28 @@ abstract HVACAssetState {
 abstract HVACAssetModel {
     simulate_time_step(time_step_size: DateTime)
 }
-abstract DoubleAuctionMarketInterface {
-    + void send_bid()
-    + void get_clearing_price()
-}
 abstract DoubleAuctionMarketStateMachine {
 }
 abstract DSOTAgent {
 }
-abstract DSOTBiddingStrategy{
+abstract BiddingStrategy{
     + solver: SolverEnum
+    + get_bid_from_device()
+    + send_bid_to_market()
+    + get_price_from_market()
+    + send_price_to_device()
+}
+abstract  HVACDSOTBiddingStrategy{
+    
+}
+class HVACDSOTRTBiddingStrategy{
+
+}
+class HVACDSOTDABiddingStrategy{
+    
+}
+abstract AuctionBid{
+    
 }
 
 
@@ -90,9 +102,7 @@ MarketInterface "1" *-- "1" MarketStateMachine
 
 
 Bid  <|--  AuctionBid 
-DoubleAuctionMarketInterface  --|>  MarketInterface
-DSOTRTMarketInterface  --|>  DoubleAuctionMarketInterface
-DSOTDAMarketInterface  --|>  DoubleAuctionMarketInterface
+
 Agent  <|--  DSOTAgent
 DSOTAgent  <|--  HVACDSOTAgent
 Asset  <|--  HVACAsset
@@ -101,9 +111,9 @@ AssetModel  <|--  HVACAssetModel
 HVACAssetModel  <|--  HVACDSOTAssetModel
 AssetState  <|--  HVACAssetState
 HVACAssetState  <|--  HVACDSOTAssetState
-DSOTBiddingStrategy  <|--  HVACDSOTRTBiddingStrategy
-DSOTBiddingStrategy  <|--  HVACDSOTDABiddingStrategy
-BiddingStrategy <|-- DSOTBiddingStrategy
+BiddingStrategy <|-- HVACDSOTBiddingStrategy
+HVACDSOTBiddingStrategy <|-- HVACDSOTRTBiddingStrategy
+HVACDSOTBiddingStrategy <|-- HVACDSOTDABiddingStrategy
 AuctionBid  <|--  DSOT4pointBid
 MarketStateMachine  <|--  DoubleAuctionMarketStateMachine
 DoubleAuctionMarketStateMachine  <|--  DSOTRTMarketStateMachine

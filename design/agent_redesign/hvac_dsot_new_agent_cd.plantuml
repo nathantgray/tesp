@@ -292,6 +292,10 @@ class HVACDSOTRTBiddingStrategy {
     + bid_rt: DSOT4pointBid
     + quantity_curve: list
     + temp_curve: list
+    + form_bid_for_device()
+    + send_bid_to_market()
+    + get_price_from_market()
+    + send_price_to_device()
 }
 class HVACDSOTDABiddingStrategy {
     + forecasts: DSOTForecasts
@@ -340,6 +344,10 @@ class HVACDSOTDABiddingStrategy {
     + ProfitMargin_intercept: float
     + temp_room_init: float
     + eps: float
+    + form_bid_for_device()
+    + send_bid_to_market()
+    + get_price_from_market()
+    + send_price_to_device()
     + update_forecast_temperature_limits(): tuple
     + update_da_indoor_temperature_limits(cooling_setpt: float, heating_setpt: float)
     + initialize_inside_air_temperature()
@@ -407,27 +415,6 @@ class HVACTemperatures{
     + deadband: float
     + validate_inputs()
 }
-
-class DSOTRTMarketInterface{
-    + market_state
-    + recent_price
-    + recent_bid
-    + get_bid_from_device()
-    + send_bid_to_market()
-    + get_price_from_market()
-    + send_price_to_device()
-}
-
-class DSOTDAMarketInterface{
-    + market_state
-    + recent_price
-    + recent_bid
-    + get_bid_from_device()
-    + send_bid_to_market()
-    + get_price_from_market()
-    + send_price_to_device()
-}
-
 
 
 
