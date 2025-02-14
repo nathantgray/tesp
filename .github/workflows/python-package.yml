@@ -38,8 +38,8 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 ./src/tesp_support/tesp_support/api --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Check types with mypy
-      uses: sasanquaneuf/mypy-github-action@releases/v1
-      
+      run: |
+        mypy ./src/tesp_support/tesp_support/api
     - name: Test with pytest
       run: |
         pytest ./src/tesp_support
