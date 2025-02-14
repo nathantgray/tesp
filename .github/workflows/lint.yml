@@ -38,4 +38,4 @@ jobs:
         flake8 ./src/tesp_support/tesp_support/api --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest ./src/tesp_support
+        pytest ./src/tesp_support/test
